@@ -29,6 +29,7 @@
 </head>
 <body>
     <table>
+        <!-- Good practice but otherwise no need to be seen -->
         <thead>
             <tr style="display: none;">
                 <th></th>
@@ -143,16 +144,16 @@
     <div class="options">
         Table size select:
         <label>
-            <input type="radio" name="choice" value="5x5" onclick=""> 5x5
+            <input type="radio" name="choice" value="5x5" onclick="setDimensions(5)"> 5x5
         </label>
         <label>
-            <input type="radio" name="choice" value="6x6" onclick="" checked> 6x6 (default)
+            <input type="radio" name="choice" value="6x6" onclick="setDimensions(6)" checked> 6x6 (default)
         </label>
         <label>
-            <input type="radio" name="choice" value="7x7" onclick=""> 7x7
+            <input type="radio" name="choice" value="7x7" onclick="setDimensions(7)"> 7x7
         </label>
         <label>
-            <input type="radio" name="choice" value="8x8" onclick=""> 8x8
+            <input type="radio" name="choice" value="8x8" onclick="setDimensions(8)"> 8x8
         </label>
     </div>
 </body>
