@@ -150,19 +150,29 @@
         </tbody>
     </table>
 
-    <div class="options">
+    <div class="tableSizeSelect">
         Table size select:
         <label>
-            <input type="radio" name="choice" value="5x5" onclick="setDimensions(5)"> 5x5
+            <input type="radio" name="size" value="5x5" onclick="setDimensions(5)"> 5x5
         </label>
         <label>
-            <input type="radio" name="choice" value="6x6" onclick="setDimensions(6)" checked> 6x6 (default)
+            <input type="radio" name="size" value="6x6" onclick="setDimensions(6)" checked> 6x6 (default)
         </label>
         <label>
-            <input type="radio" name="choice" value="7x7" onclick="setDimensions(7)"> 7x7
+            <input type="radio" name="size" value="7x7" onclick="setDimensions(7)"> 7x7
         </label>
         <label>
-            <input type="radio" name="choice" value="8x8" onclick="setDimensions(8)"> 8x8
+            <input type="radio" name="size" value="8x8" onclick="setDimensions(8)"> 8x8
+        </label>
+    </div>
+
+    <div class="cellEditMode">
+        Cell edit mode:
+        <label>
+            <input type="radio" name="mode" value="add" onclick="setEditMode(true)" checked> Add
+        </label>
+        <label>
+            <input type="radio" name="mode" value="remove" onclick="setEditMode(false)"> Remove
         </label>
     </div>
 </body>
