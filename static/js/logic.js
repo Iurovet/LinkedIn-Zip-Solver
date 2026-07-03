@@ -10,6 +10,12 @@ let nextNum = 1;
 
 function initialiseButton () {
   document.getElementById("start").addEventListener("click", () => {
+    // Find all radio buttons so that they can all be controlled
+    const radioButtons = document.querySelectorAll('input[type="radio"]');
+    radioButtons.forEach(radio => { // Disable the buttons during solving
+      radio.disabled = true;
+    });
+    
     // Find the table
     const table = document.querySelector('table').tBodies[0];
     let filledCells = [...table.rows].map(row => [...row.cells]);
@@ -38,6 +44,12 @@ function initialiseButton () {
     })
     .catch(error => {
         console.error("Error:", error);
+    })
+    .finally(() => {
+      // Re-enable the radio buttons regardless of result
+      radioButtons.forEach(radio => {
+        radio.disabled = false;
+      });
     });
   });
 }
@@ -58,6 +70,11 @@ function initialiseCells() {
 
       // Click functionality
       columns[j].addEventListener('click', function() {
+        // Make sure clicking does nothing whilst attempting to solve
+        if (Array.from(document.querySelectorAll('*')).some(el => el.matches(':disabled'))) {
+          return;
+        }
+
         // Show the circle (if not already there) and increment the next number
         if (editMode && !this.classList.contains('circle')) {
           this.classList.add('circle');
