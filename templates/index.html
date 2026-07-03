@@ -6,29 +6,38 @@
     <title>8x8 Table</title>
     <script src="static/js/logic.js"></script>
     <style>
-        table {
-            width: 100%;
-            max-width: 600px;
+        .fixed-table {
+            table-layout: fixed; /* Don't resize table cells when changing dimensions*/
+            width: 640px;
             border-collapse: collapse;
-            margin: 20px auto;
-            font-family: sans-serif;
         }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 12px;
+        
+        .fixed-table td, .fixed-table th {
+            width: 80px;
+            height: 10px;
+            overflow: hidden;
+            white-space: nowrap;
+            border: 1px solid #000;
+        }
+
+        /* Circle elements with pointer */
+        td.numberable {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            line-height: 25px;
+            border-radius: 50%;
+            background-color: black;
+            color: white;
             text-align: center;
-        }
-        th {
-            background-color: #f4f4f4;
             font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #fafafa;
+            margin-right: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <table>
+    <table class="fixed-table">
         <!-- Good practice but otherwise no need to be seen -->
         <thead>
             <tr style="display: none;">
@@ -45,98 +54,98 @@
         <tbody>
             <!-- Row 1 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
             
             <!-- Row 2 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
 
             <!-- Row 3 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
 
             <!-- Row 4 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
 
             <!-- Row 5 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
             
             <!-- Row 6 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
 
             <!-- Row 7 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
 
             <!-- Row 8 -->
             <tr>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
+                <td class="numberable"></td>
             </tr>
         </tbody>
     </table>
