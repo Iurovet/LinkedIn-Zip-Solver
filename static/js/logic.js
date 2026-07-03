@@ -19,20 +19,21 @@ function initialiseCells() {
 
     for (let j = 0; j < columns.length; j++) {
       // Remove everything from the start
-      columns[j].classList.remove('numberable');
+      columns[j].classList.remove('numerable');
+      columns[j].textContent = "";
 
       // Click functionality
       columns[j].addEventListener('click', function() {
-        // Show the circle and increment the next number
-        if (editMode && !this.classList.contains('numberable')) {
-          this.classList.add('numberable');
+        // Show the circle (if not already there) and increment the next number
+        if (editMode && !this.classList.contains('numerable')) {
+          this.classList.add('numerable');
           this.textContent = String(nextNum);
           nextNum++;
         }
 
         // Hide the circle and decrement the number
-        else if (!editMode && this.classList.contains('numberable')) {
-          this.classList.remove('numberable');
+        else if (!editMode && this.classList.contains('numerable')) {
+          this.classList.remove('numerable');
 
           let currNumber = parseInt(this.textContent);
           this.textContent = ""; // Remove the current number
@@ -64,6 +65,13 @@ function setDimensions(size) {
     const columns = rows[i].cells;
     for (let j = 0; j < columns.length; j++) {
       columns[j].style.display = (j >= size) ? 'none' : '';
+      
+      // If the cell is now hidden (row or column), delete it
+      if (rows[i].style.display === 'none' || columns[j].style.display === 'none') {
+        setEditMode(false); // Temporarily allow deletion of cells
+        columns[j].click(); // Simulate a click
+        setEditMode(true);
+      }
     }
   }
 }
@@ -79,7 +87,7 @@ function updateNumbers(currNum) {
   const table = document.querySelector('table').tBodies[0];
   const filledCells = [...table.rows].map(row => [...row.cells])
   .flat().filter(el => 
-    el.textContent !== "" && el.classList.contains('numberable')
+    el.textContent !== "" && el.classList.contains('numerable')
   ).sort((a, b) => 
     a.textContent.localeCompare(b.textContent, undefined, { numeric: true })
   );
