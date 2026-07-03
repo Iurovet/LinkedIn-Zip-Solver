@@ -10,7 +10,21 @@ def hello_world():
 
 @app.route('/api/send-data', methods=['POST'])
 def solvePuzzle():
-    return jsonify({"sizeFound": "0x0"})
+    # Get the data
+    data = request.get_json()
+    
+    # Assume a default size of 0 in case the attribute cannot be calculated
+    size = 0
+    for i in range(7, 3, -1):
+        if data[i][i]['display']:
+            size = i + 1
+            break
+    
+    # If size not determined, throw error
+    if size == 0:
+        return jsonify({"error": "Size could not be determined"}), 422
+    else:
+        return jsonify({"size": size})
 
 if __name__ == '__main__':
     # Run the application in debug mode for development

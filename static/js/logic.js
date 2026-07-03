@@ -28,7 +28,9 @@ function initialiseButton () {
       for (let j = 0; j < filledCells[i].length; ++j) {
         let element = filledCells[i][j];
         filledCells[i][j] = {
-          textContent: element.textContent, classList: Array.from(element.classList)
+          textContent: element.textContent,
+          classList: Array.from(element.classList),
+          display: element.style.display === ""
         };
       }
     }
