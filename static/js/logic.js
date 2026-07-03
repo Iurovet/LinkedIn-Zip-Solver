@@ -15,6 +15,9 @@ function initialiseButton () {
     radioButtons.forEach(radio => { // Disable the buttons during solving
       radio.disabled = true;
     });
+
+    // Also prevent "duplcate solving"
+    document.getElementById("start").disabled = true;
     
     // Find the table
     const table = document.querySelector('table').tBodies[0];
@@ -40,7 +43,8 @@ function initialiseButton () {
     })
     .then(response => response.json())
     .then(data => {
-        
+        // Restore solve button
+        document.getElementById("start").disabled = false;
     })
     .catch(error => {
         console.error("Error:", error);
@@ -70,8 +74,12 @@ function initialiseCells() {
 
       // Click functionality
       columns[j].addEventListener('click', function() {
-        // Make sure clicking does nothing whilst attempting to solve
-        if (Array.from(document.querySelectorAll('*')).some(el => el.matches(':disabled'))) {
+        /* Make sure editing the grid does nothing whilst attempting to solve, where
+         * the main sign of such is the disabled radio buttons (and only then is the
+         * solve button rendered inoperative, so as not to permanently lock someone
+         * out of pressing it).
+        */
+        if (document.querySelector('input[type="radio"]:disabled') !== null) {
           return;
         }
 
@@ -92,6 +100,9 @@ function initialiseCells() {
           updateNumbers(currNumber); // All higher elements get reduced by one
           nextNum--;
         }
+
+        // Cannot solve unless there's a number 1 somewhere
+        document.getElementById("start").disabled = nextNum <= 1;
       });
     }
   }
