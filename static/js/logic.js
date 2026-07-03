@@ -2,11 +2,45 @@
 document.addEventListener('DOMContentLoaded', () => {
     setDimensions(6); // Default dimensions 6x6
     initialiseCells(); // Remove all cells and set their behaviour
+    initialiseButton(); // Set up button behaviour
 });
-
 
 let editMode = true;
 let nextNum = 1;
+
+function initialiseButton () {
+  document.getElementById("start").addEventListener("click", () => {
+    // Find the table
+    const table = document.querySelector('table').tBodies[0];
+    let filledCells = [...table.rows].map(row => [...row.cells]);
+        
+    // Strip away all but 2 attributes (serialisation)
+    for (let i = 0; i < filledCells.length; ++i) {
+      for (let j = 0; j < filledCells[i].length; ++j) {
+        let element = filledCells[i][j];
+        filledCells[i][j] = {
+          textContent: element.textContent, classList: Array.from(element.classList)
+        };
+      }
+    }
+    
+    // Send the data (easier if Python figures out which cells aren't in use)
+    fetch("/api/send-data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json" // Because this is JSON data
+        },
+        body: JSON.stringify(filledCells) // Object -> String
+    })
+    .then(response => response.json())
+    .then(data => {
+        
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+  });
+}
 
 function initialiseCells() {
   // Find the table
