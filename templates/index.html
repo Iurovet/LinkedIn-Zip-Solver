@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>8x8 Table</title>
+    <script src="static/js/logic.js"></script>
     <style>
         table {
             width: 100%;
@@ -139,5 +140,20 @@
         </tbody>
     </table>
 
+    <div class="options">
+        Table size select:
+        <label>
+            <input type="radio" name="choice" value="5x5" onclick=""> 5x5
+        </label>
+        <label>
+            <input type="radio" name="choice" value="6x6" onclick="" checked> 6x6 (default)
+        </label>
+        <label>
+            <input type="radio" name="choice" value="7x7" onclick=""> 7x7
+        </label>
+        <label>
+            <input type="radio" name="choice" value="8x8" onclick=""> 8x8
+        </label>
+    </div>
 </body>
 </html>
