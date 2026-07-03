@@ -19,21 +19,21 @@ function initialiseCells() {
 
     for (let j = 0; j < columns.length; j++) {
       // Remove everything from the start
-      columns[j].classList.remove('numerable');
+      columns[j].classList.remove('circle');
       columns[j].textContent = "";
 
       // Click functionality
       columns[j].addEventListener('click', function() {
         // Show the circle (if not already there) and increment the next number
-        if (editMode && !this.classList.contains('numerable')) {
-          this.classList.add('numerable');
+        if (editMode && !this.classList.contains('circle')) {
+          this.classList.add('circle');
           this.textContent = String(nextNum);
           nextNum++;
         }
 
         // Hide the circle and decrement the number
-        else if (!editMode && this.classList.contains('numerable')) {
-          this.classList.remove('numerable');
+        else if (!editMode && this.classList.contains('circle')) {
+          this.classList.remove('circle');
 
           let currNumber = parseInt(this.textContent);
           this.textContent = ""; // Remove the current number
@@ -87,7 +87,7 @@ function updateNumbers(currNum) {
   const table = document.querySelector('table').tBodies[0];
   const filledCells = [...table.rows].map(row => [...row.cells])
   .flat().filter(el => 
-    el.textContent !== "" && el.classList.contains('numerable')
+    el.textContent !== "" && el.classList.contains('circle')
   ).sort((a, b) => 
     a.textContent.localeCompare(b.textContent, undefined, { numeric: true })
   );
