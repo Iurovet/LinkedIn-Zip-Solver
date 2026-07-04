@@ -1,14 +1,53 @@
+async function sendData(filledCells) {
+  try {
+    // Initiate the streaming request
+    const response = await fetch('/api/generate-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(filledCells)
+    });
+
+    // Read the stream progressively
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Handle streaming data line by line
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // Keep the incomplete line in the buffer
+
+      for (const line of lines) {
+        if (false) { // (line.startsWith('data: '))
+          const coordinate = JSON.parse(line.slice(6));
+          console.log('New cell reached:', coordinate);
+        }
+        else {
+          console.log('New message:', JSON.parse(line));
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
 // Run at the start
 document.addEventListener('DOMContentLoaded', () => {
-    setDimensions(6); // Default dimensions 6x6
-    initialiseCells(); // Remove all cells and set their behaviour
     initialiseButton(); // Set up button behaviour
+    initialiseCells(); // Remove all cells and set their behaviour
+    setDimensions(6); // Default dimensions 6x6
 });
 
 let editMode = true;
 let nextNum = 1;
 
-function initialiseButton () {
+function initialiseButton() {
   document.getElementById("start").addEventListener("click", () => {
     // Find all radio buttons so that they can all be controlled
     const radioButtons = document.querySelectorAll('input[type="radio"]');
@@ -23,40 +62,29 @@ function initialiseButton () {
     const table = document.querySelector('table').tBodies[0];
     let filledCells = [...table.rows].map(row => [...row.cells]);
         
-    // Strip away all but 2 attributes (serialisation)
+    // Don't send through every possible DOM-attribute
     for (let i = 0; i < filledCells.length; ++i) {
       for (let j = 0; j < filledCells[i].length; ++j) {
         let element = filledCells[i][j];
+        
+        // If a cell is a checkpoint number, say so, otherwise null for no checkpoint
         filledCells[i][j] = {
-          textContent: element.textContent,
-          classList: Array.from(element.classList),
+          checkpoint: element.textContent != "" ? parseInt(element.textContent) : null,
           display: element.style.display === ""
         };
       }
     }
-    
-    // Send the data (easier if Python figures out which cells aren't in use)
-    fetch("/api/send-data", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json" // Because this is JSON data
-        },
-        body: JSON.stringify(filledCells) // Object -> String
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Restore solve button
-        document.getElementById("start").disabled = false;
-    })
-    .catch(error => {
-        console.error("Error:", error);
-    })
-    .finally(() => {
-      // Re-enable the radio buttons regardless of result
-      radioButtons.forEach(radio => {
-        radio.disabled = false;
-      });
+
+    // Send the data
+    sendData(filledCells)
+
+    // Re-enable everything
+    radioButtons.forEach(radio => {
+      radio.disabled = false;
     });
+
+    // Also prevent "duplcate solving"
+    document.getElementById("start").disabled = false;
   });
 }
 
