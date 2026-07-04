@@ -14,43 +14,23 @@ def solvePuzzle():
     # Get the data
     data = request.json
     
-    # Assume a default size of 0 in case the attribute cannot be calculated
-    size = 0
-    for i in range(7, 3, -1):
-        # Found size
-        if data[i][i]['display']:
-            size = i + 1
-            break
+    # Set all visited statuses to false
+    for i in range(0, len(data)):
+        for j in range(0, len(data[i])):
+            data[i][j]['visited'] = False
 
-        # Decrement the dimensions by 1 and continue searching
-        data = [row[:-1] for row in data[:-1]]
-    
-    # If size not determined, yield error
-    if size == 0:
-        def badSize():
-            yield (json.dumps({'error': "Size could not be determined"}) + "\n").encode('utf-8')
-        
-        return Response(
-            stream_with_context(badSize()),
-            content_type='application/json'
-        )
-    else:
-        # Set all visited statuses to false
+    def generate_dfs():
+        # Explore all unvisited cells
         for i in range(0, len(data)):
             for j in range(0, len(data[i])):
-                data[i][j]['visited'] = False
-
-        def generate_dfs():
-            # Explore all unvisited cells
-            for i in range(0, len(data)):
-                for j in range(0, len(data[i])):
-                    if not data[i][j]['visited']:
-                        yield from dfs(data, i, j, size)
-        
-        return Response(
-            stream_with_context(generate_dfs()),
-            mimetype='application/json'
-        )
+                if not data[i][j]['visited']:
+                    # Default size for now
+                    yield from dfs(data, i, j, 6)
+    
+    return Response(
+        stream_with_context(generate_dfs()),
+        mimetype='application/json'
+    )
 
 def dfs(data, r, c, size):
     # Mark cell as visited
