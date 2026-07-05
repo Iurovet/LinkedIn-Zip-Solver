@@ -19,12 +19,21 @@ def solvePuzzle():
         for j in range(0, len(data[i])):
             data[i][j]['visited'] = False
 
-    # Whilst JS already handles this, find a unique proper starting cell.
-    # It must be labelled "1" on in the graph, otherwise the puzzle is invalid.
-    if sum(d.get("checkpoint") == 1 for row in data for d in row) != 1:
+    # Whilst JS already handles this, make sure the checkpoint numbers go
+    # from 1 to n without any gaps (n is how many cells the user added).
+    numbers = [
+        item["checkpoint"]
+        for row in data
+        for item in row
+        if item["checkpoint"] is not None
+    ]
+    print(numbers)
+    
+    # Likewise the start and end should be different cells
+    if len(numbers) < 2 or sorted(numbers) != list(range(1, len(numbers) + 1)):
         return Response(
             stream_with_context(
-                errorMessage("Could not find a single \"cell no. 1\"")
+                errorMessage("Need at least 2 cells with continuous numbering")
             ),
             mimetype='application/json'
         )

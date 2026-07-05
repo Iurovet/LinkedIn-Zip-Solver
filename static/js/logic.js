@@ -16,9 +16,8 @@ async function sendData(filledCells) {
       const { value, done } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      
       // Handle streaming data line by line
+      buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop(); // Keep the incomplete line in the buffer
       
@@ -135,8 +134,8 @@ function initialiseCells() {
           nextNum--;
         }
 
-        // Cannot solve unless there's a number 1 somewhere
-        document.getElementById("start").disabled = nextNum <= 1;
+        // Cannot solve unless there are 2 different cells
+        document.getElementById("start").disabled = nextNum <= 2;
       });
     }
   }
