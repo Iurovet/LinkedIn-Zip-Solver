@@ -25,17 +25,20 @@ def solvePuzzle():
             for j in range(0, len(data[i])):
                 if not data[i][j]['visited']:
                     # Default size for now
-                    yield from dfs(data, i, j, 6)
+                    yield from dfs(data, i, j)
     
     return Response(
         stream_with_context(generate_dfs()),
         mimetype='application/json'
     )
 
-def dfs(data, r, c, size):
+def dfs(data, r, c):
     # Mark cell as visited
     data[r][c]['visited'] = True
-
+    
+    # Set the size as the side length (assume graph is square-shaped)
+    size = len(data)
+    
     try:
         # Progressively send the data back to the frontend
         yield (json.dumps({'x': r, 'y': c}) + "\n").encode('utf-8')
@@ -43,10 +46,14 @@ def dfs(data, r, c, size):
         neighbours = [(r + dr, c + dc) for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)] if 0 <= r + dr < size and 0 <= c + dc < size]
         for n1 in neighbours:
             if not data[n1[0]][n1[1]]['visited']:
-                yield from dfs(data, n1[0], n1[1], size)
+                yield from dfs(data, n1[0], n1[1])
     except Exception as e:
-        # The yield keyword alone will throw this
-        yield (json.dumps({'error': str(e)}) + "\n").encode('utf-8')
+        # Using The yield keyword alone will cause some throws
+        yield from errorMessage(str(e))
+
+# Generic error message
+def errorMessage(message):
+    yield (json.dumps({'error': message}) + "\n").encode('utf-8')
 
 if __name__ == '__main__':
     # Run the application in debug mode for development

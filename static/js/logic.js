@@ -31,8 +31,14 @@ async function sendData(filledCells) {
   }
 }
 
-// Run at the start
+/* Run at the start (start by finding the table).
+ * Declare the variables here so that any function can see them.
+*/
+let table, rows;
 document.addEventListener('DOMContentLoaded', () => {
+    table = document.querySelector('table').tBodies[0];
+    rows = table.rows;
+  
     initialiseButton(); // Set up button behaviour
     initialiseCells(); // Remove all cells and set their behaviour
     setDimensions(6); // Default dimensions 6x6
@@ -52,25 +58,33 @@ function initialiseButton() {
     // Also prevent "duplcate solving"
     document.getElementById("start").disabled = true;
     
-    // Find the table
-    const table = document.querySelector('table').tBodies[0];
-    let filledCells = [...table.rows].map(row => [...row.cells]);
+    // Intitialise a 2D graph
+    let currCells = [...table.rows].map(row => [...row.cells]);
+    let filledCells = [];
+
+    // Create a new 2D graph
+    for (let i = 0; i < currCells.length; ++i) {      
+      // Check for end of row
+      if (rows[i].style.display !== "") { break; }
+      
+      // New row
+      filledCells.push([]);
+      
+      for (let j = 0; j < currCells[i].length; ++j) {
+        let element = currCells[i][j];
         
-    // Don't send through every possible DOM-attribute
-    for (let i = 0; i < filledCells.length; ++i) {
-      for (let j = 0; j < filledCells[i].length; ++j) {
-        let element = filledCells[i][j];
-        
-        // If a cell is a checkpoint number, say so, otherwise null for no checkpoint
-        filledCells[i][j] = {
-          checkpoint: element.textContent != "" ? parseInt(element.textContent) : null,
-          display: element.style.display === ""
-        };
+        // Check for end of column
+        if (element.style.display !== "") { break; }
+
+        // New column, with null = no checkpoint
+        filledCells[i].push({
+          checkpoint: element.textContent !== "" ? parseInt(element.textContent) : null
+        });
       }
     }
 
     // Send the data
-    sendData(filledCells)
+    sendData(filledCells);
 
     // Re-enable everything
     radioButtons.forEach(radio => {
@@ -83,10 +97,6 @@ function initialiseButton() {
 }
 
 function initialiseCells() {
-  // Find the table
-  const table = document.querySelector('table').tBodies[0];
-  const rows = table.rows;
-  
   // Look for individual elements
   for (let i = 0; i < rows.length; i++) {
     const columns = rows[i].cells;
@@ -139,10 +149,6 @@ function setEditMode(value){
 
 // Sets table size to a square of side length 5, 6, 7 or 8
 function setDimensions(size) {
-  // Find the table
-  const table = document.querySelector('table').tBodies[0];
-  const rows = table.rows;
-  
   for (let i = 0; i < rows.length; i++) {
     // Check if the row needs to be hidden
     rows[i].style.display = (i >= size) ? 'none' : '';
@@ -168,9 +174,6 @@ function updateNumbers(currNum) {
    * ensures behaviour of the type [1, 2, 10], rather than [1, 10, 2] in terms
    * of what textContent is equal to.
   */
-  
-  // Find the table
-  const table = document.querySelector('table').tBodies[0];
   const filledCells = [...table.rows].map(row => [...row.cells])
   .flat().filter(el => 
     el.textContent !== "" && el.classList.contains('circle')
