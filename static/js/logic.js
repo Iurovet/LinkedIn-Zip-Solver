@@ -21,15 +21,9 @@ async function sendData(filledCells) {
       // Handle streaming data line by line
       const lines = buffer.split('\n');
       buffer = lines.pop(); // Keep the incomplete line in the buffer
-
+      
       for (const line of lines) {
-        if (false) { // (line.startsWith('data: '))
-          const coordinate = JSON.parse(line.slice(6));
-          console.log('New cell reached:', coordinate);
-        }
-        else {
-          console.log('New message:', JSON.parse(line));
-        }
+        console.log('New message:', JSON.parse(line));
       }
     }
   } catch (error) {
