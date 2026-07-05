@@ -19,6 +19,16 @@ def solvePuzzle():
         for j in range(0, len(data[i])):
             data[i][j]['visited'] = False
 
+    # Whilst JS already handles this, find a unique proper starting cell.
+    # It must be labelled "1" on in the graph, otherwise the puzzle is invalid.
+    if sum(d.get("checkpoint") == 1 for row in data for d in row) != 1:
+        return Response(
+            stream_with_context(
+                errorMessage("Could not find a single \"cell no. 1\"")
+            ),
+            mimetype='application/json'
+        )
+
     def generate_dfs():
         # Explore all unvisited cells
         for i in range(0, len(data)):
