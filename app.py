@@ -31,15 +31,13 @@ def solvePuzzle():
     # Likewise the start and end should be different cells
     if len(checkpoints) < 2 or checkpoints != list(range(1, len(checkpoints) + 1)):
         message = "Error: Need at least 2 cells with continuous numbering"
-        path = [{'x': -1, 'y': -1, 'message': message, 'reverse': False}]
+        path = [{'x': -1, 'y': -1, 'message': message}]
     else:
         path = findPath(data, *findCheckpoint(data, 1), [])[1]
     
     # Get the path
     def returnPath(path):
         for p1 in path:
-            r, c = p1['x'], p1['y']
-            print((r, c), p1)
             yield (json.dumps(p1, ensure_ascii=False) + "\n").encode('utf-8')
     
     return Response(
@@ -69,7 +67,7 @@ def findPath(data, r, c, path):
     ):
         # Log the result
         message = "Success: Found a path" if visitedNo == total else "Error: Not all cells were used"
-        path.append({'x': r, 'y': c, 'message': message, 'reverse': visitedNo != total})
+        path.append({'x': r, 'y': c, 'message': message})
 
         # Undo
         if visitedNo != total:
@@ -89,14 +87,16 @@ def findPath(data, r, c, path):
         if any(d["checkpoint"] < data[r][c]['checkpoint'] and not d["visited"] for d in checkpoints):
             # Log the result
             message = "Error: Checkpoint " + str(data[r][c]['checkpoint']) + " visited in the wrong order"
-            path.append({'x': r, 'y': c, 'message': message, 'reverse': True})
-
+            
             # Undo
             data[r][c]['visited'] = False
+            path.append({'x': r, 'y': c, 'message': message})
             return False, path
     
     message = "New coordinates at (" + str(r) + ", " + str(c) + ")"
-    path.append({'x': r, 'y': c, 'message': message, 'reverse': False})
+    if data[r][c]['checkpoint'] is not None:
+        message += " - checkpoint " + str(data[r][c]['checkpoint'])
+    path.append({'x': r, 'y': c, 'message': message})
 
     # DFS exploration (first assume the grid is "square")
     size = len(data)
@@ -108,9 +108,10 @@ def findPath(data, r, c, path):
             if findPath(data, *n1, path)[0]:
                 return True, path
 
-    # Base-case failure
-    message = "Error: No neighbours found"
-    path.append({'x': r, 'y': c, 'message': message, 'reverse': True})
+    # No new neighbours (wrong cell visited) with undo
+    data[r][c]['visited'] = False
+    path[-1]['message'] += ". No valid neighbours found, though."
+    
     return False, path
 
 if __name__ == '__main__':
