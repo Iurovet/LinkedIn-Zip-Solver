@@ -33,7 +33,7 @@ def solvePuzzle():
         message = "Error: Need at least 2 cells with continuous numbering"
         path = [{'x': -1, 'y': -1, 'message': message}]
     else:
-        path = findPath(data, *findCheckpoint(data, 1), [])[1]
+        path = findPath(data, *findCheckpoint(data, 1), [], [])[1]
     
     # Get the path
     def returnPath(path):
@@ -45,6 +45,15 @@ def solvePuzzle():
         mimetype='application/json'
     )
 
+def backtrack(path, path_good):
+    newCell = path[0]
+    if len(path_good) >= 2:
+        path_good.pop()
+        newCell = path_good[-1]
+    path.append({**newCell, "message": "Backtracking"})
+
+    return path, path_good
+
 def findCheckpoint(data, num):
     return next(
         (r, c)
@@ -54,65 +63,62 @@ def findCheckpoint(data, num):
     )
 
 # Sends data to the frontend but may still be faulty
-def findPath(data, r, c, path):
-    # Initially mark this cell as visited and initialise some data
+def findPath(data, r, c, path, path_good):
+    # 1. Initialize data
+    size = len(data)
+    total = size ** 2
+    
+    # Mark current cell as visited
     data[r][c]['visited'] = True
-    total = len(data) ** 2
-    visitedNo = sum(cell.get('visited') is True for row in data for cell in row)
+    visitedNo = sum(cell['visited'] is True for row in data for cell in row)
 
-    # Reached the final checkpoint, check if all other cells filled in
-    if data[r][c]['checkpoint'] == max(
+    # Log the move
+    message = "Visiting (" + str(r) + ", " + str(c) + ")"
+    if data[r][c]['checkpoint'] is not None:
+        message += " - checkpoint " + str(data[r][c]['checkpoint'])
+    
+    path.append({'x': r, 'y': c, 'message': message})
+    path_good.append({'x': r, 'y': c, 'message': message})
+
+    # Reached the final checkpoint
+    if data[r][c] == max(
         (item for row in data for item in row if item['checkpoint'] is not None),
         key=lambda x: x.get('checkpoint', 0)
     ):
-        # Log the result
-        message = "Success: Found a path" if visitedNo == total else "Error: Not all cells were used"
-        path.append({'x': r, 'y': c, 'message': message})
-
-        # Undo
+        # Check whether all cells have been visited
+        path[-1]['message'] += " (found a complete path)" if visitedNo == total else " (not all cells were used)"
+        
         if visitedNo != total:
+            # Backtrack and record as such
             data[r][c]['visited'] = False
-
-        return visitedNo == total, path
-
-    # Found a checkpoint
-    if data[r][c]['checkpoint'] is not None:
-        # Look at checkpoint cells only
-        checkpoints = [
-            d for row in data for d in row
-            if d.get("checkpoint") is not None
-        ]
-
-        # Make sure that there aren't prior, unvisited checkpoints
-        if any(d["checkpoint"] < data[r][c]['checkpoint'] and not d["visited"] for d in checkpoints):
-            # Log the result
-            message = "Error: Checkpoint " + str(data[r][c]['checkpoint']) + " visited in the wrong order"
+            path, path_good = backtrack(path, path_good)
             
-            # Undo
-            data[r][c]['visited'] = False
-            path.append({'x': r, 'y': c, 'message': message})
-            return False, path
-    
-    message = "New coordinates at (" + str(r) + ", " + str(c) + ")"
-    if data[r][c]['checkpoint'] is not None:
-        message += " - checkpoint " + str(data[r][c]['checkpoint'])
-    path.append({'x': r, 'y': c, 'message': message})
+        return visitedNo == total, path, path_good
 
-    # DFS exploration (first assume the grid is "square")
-    size = len(data)
-    neighbours = [(r + dr, c + dc) for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)] if 0 <= r + dr < size and 0 <= c + dc < size]
+    # Check if a checkpoing was reached in the checkpoint
+    if data[r][c]['checkpoint'] is not None:
+        checkpoints = [d for row in data for d in row if d.get("checkpoint") is not None]
+        if any(d["checkpoint"] < data[r][c]['checkpoint'] and not d["visited"] for d in checkpoints):
+            # Backtrack and record as such
+            data[r][c]['visited'] = False
+            path[-1]['message'] += " (wrong order)"
+            path, path_good = backtrack(path, path_good)
+            
+            return False, path, path_good
     
+    # DFS Exploration
+    neighbours = [(r + dr, c + dc) for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)] if 0 <= r + dr < size and 0 <= c + dc < size]
     for n1 in neighbours:
         if not data[n1[0]][n1[1]]['visited']:
-            # Current cell is OK
-            if findPath(data, *n1, path)[0]:
-                return True, path
+            if findPath(data, *n1, path, path_good)[0]:
+                return True, path, path_good
 
-    # No new neighbours (wrong cell visited) with undo
+    # Backtrack and record dead ends as such
     data[r][c]['visited'] = False
-    path[-1]['message'] += ". No valid neighbours found, though."
-    
-    return False, path
+    path[-1]['message'] += " (no more unvisited neighbours)"
+    path, path_good = backtrack(path, path_good)
+
+    return False, path, path_good
 
 if __name__ == '__main__':
     # Run the application in debug mode for development
