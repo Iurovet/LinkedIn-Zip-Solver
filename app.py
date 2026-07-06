@@ -1,4 +1,5 @@
 import json
+import time
 from flask import Flask, render_template, Response, request, stream_with_context
 
 # Initialize the Flask application
@@ -38,6 +39,7 @@ def solvePuzzle():
     # Get the path
     def returnPath(path):
         for p1 in path:
+            time.sleep(2)
             yield (json.dumps(p1, ensure_ascii=False) + "\n").encode('utf-8')
     
     return Response(
