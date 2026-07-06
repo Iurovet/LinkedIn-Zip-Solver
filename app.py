@@ -30,99 +30,88 @@ def solvePuzzle():
 
     # Likewise the start and end should be different cells
     if len(checkpoints) < 2 or checkpoints != list(range(1, len(checkpoints) + 1)):
-        return Response(
-            stream_with_context(
-                logMessage("Need at least 2 cells with continuous numbering")
-            ),
-            mimetype='application/json'
-        )
-
-    # Currently inherently faulty as yield cannot coexist with return,
-    # at least not in this implementation
-    def find_path(data, currCell):
-        # Number of cells with visited = true
-        visitedNo = sum(cell.get('visited') is True for row in data for cell in row)
-
-        # Assume the grid is square-shaped
-        size = len(data) ** 2
-
-        # Reached the final checkpoint, check if all other cells filled in
-        if currCell == max(
-            (item for row in data for item in row if item['checkpoint'] is not None),
-            key=lambda x: x.get('checkpoint', 0)
-        ):
-            yield from logMessage(
-                "Success: Found a path" if visitedNo == size else "Error: Not all cells were used"
-            )
-
-            # Undo
-            if visitedNo != size:
-                r, c = [(r, c) for r, row in enumerate(data) for c, item in enumerate(row) if item == currCell][0]
-                yield (json.dumps({'x_reverse': r, 'y_reverse': c}) + "\n").encode('utf-8')
-                data[r][c]['visited'] = False
-
-        # Found a checkpoint
-        if currCell['checkpoint'] is not None:
-            # Look at checkpoint cells only
-            checkpoints = [
-                d for row in data for d in row
-                if d.get("checkpoint") is not None
-            ]
-            
-            # Make sure that there aren't prior, unvisited checkpoints
-            if any(d["checkpoint"] < currCell['checkpoint'] and not d["visited"] for d in checkpoints):
-                yield from logMessage("Error: Checkpoints visited in the wrong order")
-                
-                # Undo
-                r, c = [(r, c) for r, row in enumerate(data) for c, item in enumerate(row) if item == currCell][0]
-                yield (json.dumps({'x_reverse': r, 'y_reverse': c}) + "\n").encode('utf-8')
-                data[r][c]['visited'] = False
-        
-        # Current indices
-        r, c = next(
-            (r, c)
-            for r, row in enumerate(data)
-            for c, item in enumerate(row)
-            if item == currCell
-        )
-
-        # Current cell is OK
-        yield (json.dumps({'x': r, 'y': c}) + "\n").encode('utf-8')
-        
-        # DFS exploration
-        neighbours = [(r + dr, c + dc) for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)] if 0 <= r + dr < size and 0 <= c + dc < size]
-        for n1 in neighbours:
-            if not data[n1[0]][n1[1]]['visited']:
-                print(n1, data[n1[0]][n1[1]])
-                data[n1[0]][n1[1]]['visited'] = True
-                find_path(data, n1)
-                print(n1, data[n1[0]][n1[1]])
-        
-        # In case the final checkpoint was found without visiting all cells
-        yield from logMessage("Information: Attempting to add more cells to the path."
-                              "Else if this is the top of the call stack, no solutions.")
-
-    # Find the path, assuming that the graph is square-shaped.
-    # Start from checkpoint 1
+        message = "Error: Need at least 2 cells with continuous numbering"
+        path = [{'x': -1, 'y': -1, 'message': message, 'reverse': False}]
+    else:
+        path = findPath(data, *findCheckpoint(data, 1), [])[1]
+    
+    # Get the path
+    def returnPath(path):
+        for p1 in path:
+            r, c = p1['x'], p1['y']
+            print((r, c), p1)
+            yield (json.dumps(p1, ensure_ascii=False) + "\n").encode('utf-8')
+    
     return Response(
-        stream_with_context(
-            find_path(data, findCheckpoint(data, 1))
-        ),
+        stream_with_context(returnPath(path)),
         mimetype='application/json'
     )
 
 def findCheckpoint(data, num):
-    r, c = next(
-        (r_idx, c_idx)
-        for r_idx, row in enumerate(data)
-        for c_idx, item in enumerate(row)
+    return next(
+        (r, c)
+        for r, row in enumerate(data)
+        for c, item in enumerate(row)
         if isinstance(item, dict) and item.get("checkpoint") == num
     )
-    return data[r][c]
 
-# Generic logging function
-def logMessage(message):
-    yield (json.dumps({'error': message}) + "\n").encode('utf-8')
+# Sends data to the frontend but may still be faulty
+def findPath(data, r, c, path):
+    # Initially mark this cell as visited and initialise some data
+    data[r][c]['visited'] = True
+    total = len(data) ** 2
+    visitedNo = sum(cell.get('visited') is True for row in data for cell in row)
+
+    # Reached the final checkpoint, check if all other cells filled in
+    if data[r][c]['checkpoint'] == max(
+        (item for row in data for item in row if item['checkpoint'] is not None),
+        key=lambda x: x.get('checkpoint', 0)
+    ):
+        # Log the result
+        message = "Success: Found a path" if visitedNo == total else "Error: Not all cells were used"
+        path.append({'x': r, 'y': c, 'message': message, 'reverse': visitedNo != total})
+
+        # Undo
+        if visitedNo != total:
+            data[r][c]['visited'] = False
+
+        return visitedNo == total, path
+
+    # Found a checkpoint
+    if data[r][c]['checkpoint'] is not None:
+        # Look at checkpoint cells only
+        checkpoints = [
+            d for row in data for d in row
+            if d.get("checkpoint") is not None
+        ]
+
+        # Make sure that there aren't prior, unvisited checkpoints
+        if any(d["checkpoint"] < data[r][c]['checkpoint'] and not d["visited"] for d in checkpoints):
+            # Log the result
+            message = "Error: Checkpoint " + str(data[r][c]['checkpoint']) + " visited in the wrong order"
+            path.append({'x': r, 'y': c, 'message': message, 'reverse': True})
+
+            # Undo
+            data[r][c]['visited'] = False
+            return False, path
+    
+    message = "New coordinates at (" + str(r) + ", " + str(c) + ")"
+    path.append({'x': r, 'y': c, 'message': message, 'reverse': False})
+
+    # DFS exploration (first assume the grid is "square")
+    size = len(data)
+    neighbours = [(r + dr, c + dc) for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)] if 0 <= r + dr < size and 0 <= c + dc < size]
+    
+    for n1 in neighbours:
+        if not data[n1[0]][n1[1]]['visited']:
+            # Current cell is OK
+            if findPath(data, *n1, path)[0]:
+                return True, path
+
+    # Base-case failure
+    message = "Error: No neighbours found"
+    path.append({'x': r, 'y': c, 'message': message, 'reverse': True})
+    return False, path
 
 if __name__ == '__main__':
     # Run the application in debug mode for development
