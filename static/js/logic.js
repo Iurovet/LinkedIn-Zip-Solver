@@ -1,28 +1,61 @@
 async function sendData(filledCells) {
+  // Clear the previous lines
+  document.getElementById('line-canvas').innerHTML = '';
+
   try {
-    // Initiate the streaming request
     const response = await fetch('/api/generate-path', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(filledCells)
     });
 
-    // Read the stream progressively
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
+    
+    // Make sure multiple packets don't break the buffer
+    let pathHistory = [];
 
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
 
-      // Handle streaming data line by line
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // Keep the incomplete line in the buffer
+      buffer = lines.pop(); // Keep incomplete fragments in the buffer
       
       for (const line of lines) {
-        console.log('New message:', JSON.parse(line));
+        // Skip unexpected trailing blank spaces then log
+        if (!line.trim()) continue;
+        const parsedNode = JSON.parse(line);
+        console.log('New message:', parsedNode);
+
+        // Guard against Python identifying structural graph compilation limits
+        if (parsedNode.x === -1 || parsedNode.y === -1) {
+          break;
+        }
+
+        // Push new node to the master path history
+        pathHistory.push(parsedNode);
+
+        // Draw line if we have at least two historic entries to bridge
+        if (pathHistory.length > 1) {
+          const prev = pathHistory[pathHistory.length - 2];
+          const curr = pathHistory[pathHistory.length - 1];
+          
+          // Draw if the line (or its opposite) doesn't exist, erase if it does
+          let key = `${prev.x},${prev.y}-${curr.x},${curr.y}`;
+          let keyReverse = `${curr.x},${curr.y}-${prev.x},${prev.y}`;
+          let lineSearch = svg.querySelector(
+            `line[data-key="${key}"], line[data-key="${keyReverse}"]`
+          );
+          
+          if (lineSearch) {
+            lineSearch.remove();
+          } else {
+            drawLine(prev, curr);
+          }
+        }
       }
     }
   } catch (error) {
@@ -30,83 +63,102 @@ async function sendData(filledCells) {
   }
 }
 
-/* Run at the start (start by finding the table).
+/* Run at the start (start by finding the table, cells and graph area).
  * Declare the variables here so that any function can see them.
 */
-let table, rows;
+let container, table, rows, svg;
 document.addEventListener('DOMContentLoaded', () => {
+    container = document.querySelector('.table-container');
     table = document.querySelector('table').tBodies[0];
-    rows = table.rows;
+    rows = table.rows;    
+    svg = document.getElementById('line-canvas');
   
     initialiseButton(); // Set up button behaviour
     initialiseCells(); // Remove all cells and set their behaviour
     setDimensions(6); // Default dimensions 6x6
 });
 
+function drawLine(prev, curr) {
+  // Find where to draw the cells
+  const cellA = table.rows[prev.x].cells[prev.y];
+  const cellB = table.rows[curr.x].cells[curr.y];
+  
+  // Get positions relative to the viewport
+  const rectContainer = container.getBoundingClientRect();
+  const rectA = cellA.getBoundingClientRect();
+  const rectB = cellB.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${rectContainer.width} ${rectContainer.height}`);
+
+  // Calculate centerpoints relative to the container
+  const x1 = rectA.left - rectContainer.left + (rectA.width / 2);
+  const y1 = rectA.top - rectContainer.top + (rectA.height / 2);
+  const x2 = rectB.left - rectContainer.left + (rectB.width / 2);
+  const y2 = rectB.top - rectContainer.top + (rectB.height / 2);
+  
+  // Create and append the SVG line (data-key allows for later erasure)
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", x1);
+  line.setAttribute("y1", y1);
+  line.setAttribute("x2", x2);
+  line.setAttribute("y2", y2);
+  line.setAttribute("stroke", "red");
+  line.setAttribute("stroke-width", "2");
+  line.setAttribute("data-key", `${prev.x},${prev.y}-${curr.x},${curr.y}`);
+  svg.appendChild(line);
+}
+
 let editMode = true;
 let nextNum = 1;
-
 function initialiseButton() {
-  document.getElementById("start").addEventListener("click", () => {
-    // Find all radio buttons so that they can all be controlled
+  document.getElementById("start").addEventListener("click", async () => {
+    // Find the radio buttons so that they can all be disabled during solving
     const radioButtons = document.querySelectorAll('input[type="radio"]');
-    radioButtons.forEach(radio => { // Disable the buttons during solving
+    radioButtons.forEach(radio => {
       radio.disabled = true;
     });
 
     // Also prevent "duplcate solving"
     document.getElementById("start").disabled = true;
     
-    // Intitialise a 2D graph
-    let currCells = [...table.rows].map(row => [...row.cells]);
+    // Get the visible HTML rows
+    const visibleRows = [...rows].filter(row => row.style.display === "");
     let filledCells = [];
-
-    // Create a new 2D graph
-    for (let i = 0; i < currCells.length; ++i) {      
-      // Check for end of row
-      if (rows[i].style.display !== "") { break; }
+    for (let i = 0; i < visibleRows.length; ++i) {
+      let rowData = [];
       
-      // New row
-      filledCells.push([]);
-      
-      for (let j = 0; j < currCells[i].length; ++j) {
-        let element = currCells[i][j];
-        
-        // Check for end of column
-        if (element.style.display !== "") { break; }
-
-        // New column, with null = no checkpoint
-        filledCells[i].push({
-          checkpoint: element.textContent !== "" ? parseInt(element.textContent) : null
+      // Get the visible columns from this row
+      const visibleCells = [...visibleRows[i].cells].filter(cell => cell.style.display === "");
+      for (let j = 0; j < visibleCells.length; ++j) {
+        let element = visibleCells[j];
+        rowData.push({
+          checkpoint: element.textContent.trim() !== "" ? parseInt(element.textContent) : null
         });
       }
+      
+      filledCells.push(rowData);
     }
 
-    // Send the data
-    sendData(filledCells);
+    // Send the data (clear the lines first)
+    await sendData(filledCells);
 
-    // Re-enable everything
+    // Re-enable options and solving
     radioButtons.forEach(radio => {
       radio.disabled = false;
     });
 
-    // Also prevent "duplcate solving"
     document.getElementById("start").disabled = false;
   });
 }
 
 function initialiseCells() {
-  // Look for individual elements
   for (let i = 0; i < rows.length; i++) {
     const columns = rows[i].cells;
-
     for (let j = 0; j < columns.length; j++) {
-      // Remove everything from the start
-      columns[j].classList.remove('circle');
-      columns[j].textContent = "";
+      const cell = columns[j];
 
-      // Click functionality
-      columns[j].addEventListener('click', function() {
+      // Remove the text then add click functionality
+      cell.innerHTML = "";
+      cell.addEventListener('click', function() {
         /* Make sure editing the grid does nothing whilst attempting to solve, where
          * the main sign of such is the disabled radio buttons (and only then is the
          * solve button rendered inoperative, so as not to permanently lock someone
@@ -116,20 +168,23 @@ function initialiseCells() {
           return;
         }
 
+        // Find a circle in this cell
+        let circle = this.querySelector('.circle');
+
         // Show the circle (if not already there) and increment the next number
-        if (editMode && !this.classList.contains('circle')) {
-          this.classList.add('circle');
-          this.textContent = String(nextNum);
+        if (editMode && !circle) {
+          circle = document.createElement('div');
+          circle.classList.add('circle');
+          circle.textContent = String(nextNum);
+          
+          this.appendChild(circle); // Show the circle in the table cell
           nextNum++;
         }
 
         // Hide the circle and decrement the number
-        else if (!editMode && this.classList.contains('circle')) {
-          this.classList.remove('circle');
-
-          let currNumber = parseInt(this.textContent);
-          this.textContent = ""; // Remove the current number
-
+        else if (!editMode && circle) {
+          let currNumber = parseInt(circle.textContent);
+          circle.remove(); // Safely wipes the inner circle element entirely from the DOM
           updateNumbers(currNumber); // All higher elements get reduced by one
           nextNum--;
         }
@@ -146,46 +201,48 @@ function setEditMode(value){
   editMode = value;
 }
 
-// Sets table size to a square of side length 5, 6, 7 or 8
 function setDimensions(size) {
   for (let i = 0; i < rows.length; i++) {
-    // Check if the row needs to be hidden
-    rows[i].style.display = (i >= size) ? 'none' : '';
+    // Check if the row should be hidden
+    rows[i].style.display = i >= size ? "none" : "";
+    
+    const cells = rows[i].cells;
+    for (let j = 0; j < cells.length; j++) {
+      // Explicitly hide cells from hidden rows, not just columns
+      cells[j].style.display = (i >= size || j >= size) ? "none" : "";
       
-    // Separately hide the columns in every row
-    const columns = rows[i].cells;
-    for (let j = 0; j < columns.length; j++) {
-      columns[j].style.display = (j >= size) ? 'none' : '';
-      
-      // If the cell is now hidden (row or column), delete it
-      if (rows[i].style.display === 'none' || columns[j].style.display === 'none') {
-        setEditMode(false); // Temporarily allow deletion of cells
-        columns[j].click(); // Simulate a click
-        setEditMode(true);
+      // If so, remove the circle and number
+      if (cells[j].style.display == "none") {
+        let circle = cells[j].querySelector('.circle');
+        if (circle) {
+          let currNumber = parseInt(circle.textContent, 10);
+          circle.remove();
+          updateNumbers(currNumber);
+          nextNum--;
+        }
       }
     }
   }
+
+  // If less than 2 circles are left, disable solving
+  document.getElementById("start").disabled = nextNum <= 2;
 }
 
 function updateNumbers(currNum) {
-  /* Find where a cell is filled in and sort it by number (assuming it
-   * exists, hence why the array must be flattened first). Using numeric
-   * ensures behaviour of the type [1, 2, 10], rather than [1, 10, 2] in terms
-   * of what textContent is equal to.
+  /* Get the visible cells. Note that {numeric: true} favours outcomes
+   * of the type [1, 2, 10], rather than [1, 10, 2]
   */
-  const filledCells = [...table.rows].map(row => [...row.cells])
-  .flat().filter(el => 
-    el.textContent !== "" && el.classList.contains('circle')
-  ).sort((a, b) => 
-    a.textContent.localeCompare(b.textContent, undefined, { numeric: true })
-  );
+  const filledCircles = [...rows]
+    .flatMap(row => [...row.cells])
+    .filter(cell => cell.offsetParent !== null && cell.querySelector('.circle') !== null)
+    .map(cell => cell.querySelector('.circle'))
+    .sort((a, b) => a.textContent.localeCompare(b.textContent, undefined, { numeric: true }));
 
-  /* There should be a gap of 1 precisely where an element was removed.
-   * Any cell above that number should be decremented by 1 to fill said gap.
-  */
-  filledCells.forEach(element => {
-    if (parseInt(element.textContent) > currNum) {
-      element.textContent = (parseInt(element.textContent, 10) - 1).toString();
+  // Downshift the numbers greater than currNumb
+  filledCircles.forEach(circle => {
+    const circleValue = parseInt(circle.textContent, 10);
+    if (circleValue > currNum) {
+      circle.textContent = (circleValue - 1).toString();
     }
-  })
+  });
 }

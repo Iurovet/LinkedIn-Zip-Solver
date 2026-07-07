@@ -4,151 +4,181 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>8x8 Table</title>
-    <script src="static/js/logic.js"></script>
+    <script src="static/js/logic.js" defer></script>
     <style>
+        /* Table */
         .fixed-table {
             width: 400px;
             border-collapse: collapse;
+            table-layout: fixed; /* Make sure circles won't push the boundaries */
         }
         
-        .fixed-table td{
+        /* Table rows */
+        .fixed-table td {
             width: 75px;
             height: 75px;
             overflow: hidden;
             white-space: nowrap;
             box-sizing: border-box;
             border: 1px solid #000;
+            
+            /* Centers the inner circle wrapper perfectly inside the cell bounds */
             text-align: center;
             vertical-align: middle;
         }
 
-        td.circle {
-            width: 25px;
-            height: 25px;
-            line-height: 25px;
-            border-radius: 50%;
+        /* Path overlay */
+        #line-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows user interactions to pass straight through to table */
+            display: block;       /* Removes baseline browser spacing anomalies */
+            z-index: 10;          /* Pulls lines explicitly to the top layer above cells */
+        }
+
+        /* Table positioning */
+        .table-container {
+            position: relative;
+            display: inline-block; /* Wraps structural dimensions precisely around table edges */
+        }
+
+        /* Circles */
+        .fixed-table td .circle {
+            display: inline-block;         /* Allows specific width and height dimensions to take effect */
+            width: 100%;                   /* Relative to the table cells */
+            height: 100%;
+            box-sizing: border-box;        /* Add padding */
+            line-height: calc(75px - 2px); /* Account for padding when entering circles */
+            border-radius: 50%;            /* Generates a perfect visual curve radius */
             background-color: black;
             color: white;
-            text-align: center;
+            text-align: center;            /* Horizontal align */
             font-weight: bold;
-            margin-right: 10px;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <table class="fixed-table">
-        <!-- Good practice but otherwise no need to be seen -->
-        <thead>
-            <tr style="display: none;">
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Row 1 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
-            
-            <!-- Row 2 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
+    <div class="table-container">
+        <!-- For drawing on top of the table cells -->
+        <svg id="line-canvas"></svg>
+        
+        <table class="fixed-table">
+            <!-- Good practice but otherwise no need to be seen -->
+            <thead>
+                <tr style="display: none;">
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Row 1 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
+                
+                <!-- Row 2 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
 
-            <!-- Row 3 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
+                <!-- Row 3 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
 
-            <!-- Row 4 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
+                <!-- Row 4 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
 
-            <!-- Row 5 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
-            
-            <!-- Row 6 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
+                <!-- Row 5 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
+                
+                <!-- Row 6 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
 
-            <!-- Row 7 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
+                <!-- Row 7 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
 
-            <!-- Row 8 -->
-            <tr>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-                <td class="circle"></td>
-            </tr>
-        </tbody>
-    </table>
+                <!-- Row 8 -->
+                <tr>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                    <td><div class="circle"></div></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="tableSizeSelect">
         Table size select:
