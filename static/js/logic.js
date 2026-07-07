@@ -246,3 +246,29 @@ function updateNumbers(currNum) {
     }
   });
 }
+
+window.addEventListener('keydown', (event) => {
+    // Resizing (the comparison fails with letters)
+    const number = parseInt(event.key, 10);
+    if (number === number && number >= 5 && number <= 8) {
+      document.getElementById(number + "x" + number).click();
+    }
+
+    // Get the key, irrespective of case (edit mode)
+    else {
+      const key = event.key.toLowerCase();
+      switch (key) {
+        case "a":
+          document.getElementById("add").click();
+          break;
+        case "b":
+          document.getElementById("remove").click();
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Prevent browser behaviour
+    event.preventDefault();
+});
