@@ -205,7 +205,17 @@
             <input type="radio" name="mode" value="remove" onclick="setEditMode('REMOVE')" id="remove"> Remove (b)
         </label>
         <label>
-            <input type="radio" name="mode" value="remove" onclick="setEditMode('OFF')" id="off"> Off (c)
+            <input type="radio" name="mode" value="off" onclick="setEditMode('OFF')" id="off"> Off (c)
+        </label>
+    </div>
+
+    <div class="pathType">
+        Path type:
+        <label>
+            <input type="radio" name="direction" value="normal" onclick="setPathType(true)" id="normal" checked> Normal (d)
+        </label>
+        <label>
+            <input type="radio" name="direction" value="surprise" onclick="setPathType(false)" id="surprise"> Surprise me! (e)
         </label>
     </div>
 

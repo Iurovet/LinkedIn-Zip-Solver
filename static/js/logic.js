@@ -1,4 +1,4 @@
-async function sendData(filledCells) {
+async function sendData(payload) {
   // Clear the previous lines
   document.getElementById('line-canvas').innerHTML = '';
 
@@ -6,7 +6,7 @@ async function sendData(filledCells) {
     const response = await fetch('/api/generate-path', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(filledCells)
+      body: JSON.stringify(payload)
     });
 
     const reader = response.body.getReader();
@@ -64,7 +64,7 @@ async function sendData(filledCells) {
 }
 
 // Declare the variables here at the start so that any function can see them.
-let currNode, lastSize, nextNum, container, table, rows, radioButtons, svg;
+let currNode, lastSize, nextNum, pathType, container, table, rows, radioButtons, svg;
 
 // Keep track of the current state and next number
 const EditMode = Object.freeze({
@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currMode = EditMode.ADD;
     lastSize = "0x0" // Track the previous size, at this stage unavailable
     nextNum = 1;
+    pathType = true // Forward direction
 
     container = document.querySelector('.table-container');
     table = document.querySelector('table').tBodies[0];
@@ -86,8 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     svg = document.getElementById('line-canvas');
   
     initialiseButton(); // Set up button behaviour
-    initialiseCells(); // Remove all cells and set their behaviour
-    setDimensions(6); // Default dimensions 6x6
+    initialiseCells(); // Clean up the cells and set their behaviour
+    setDimensions(6); // Default dimensions 6x6 (removes the excess)
 });
 
 
@@ -149,7 +150,7 @@ function initialiseButton() {
     }
 
     // Send the data (clear the lines first)
-    await sendData(filledCells);
+    await sendData({"filledCells": filledCells, "pathType": pathType});
 
     // Re-enable solving and all other radio buttons
     const div = document.querySelector('.cellEditMode');
@@ -260,6 +261,11 @@ function setEditMode(value){
   });
 }
 
+/* Set the path direction to forward (true) or reverse (false).
+ * The latter produces quirky, but ultimately correct results.
+*/
+function setPathType(isNormal) { pathType = isNormal; }
+
 function updateNumbers(currNum) {
   /* Get the visible cells. Note that {numeric: true} favours outcomes
    * of the type [1, 2, 10], rather than [1, 10, 2]
@@ -287,8 +293,9 @@ window.addEventListener('keydown', (event) => {
       document.getElementById(number + "x" + number).click();
     }
 
-    // Get the key, irrespective of case (edit mode)
+    // Mode changes
     else {
+      // Upper or lowercase is arbitrary, just be consistent
       const key = event.key.toLowerCase();
       switch (key) {
         case "a":
@@ -299,6 +306,12 @@ window.addEventListener('keydown', (event) => {
           break;
         case "c":
           document.getElementById("off").click();
+          break;
+        case "d":
+          document.getElementById("normal").click();
+          break;
+        case "e":
+          document.getElementById("surprise").click();
           break;
         default:
           break;
