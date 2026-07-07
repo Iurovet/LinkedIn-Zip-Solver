@@ -63,20 +63,34 @@ async function sendData(filledCells) {
   }
 }
 
-/* Run at the start (start by finding the table, cells and graph area).
- * Declare the variables here so that any function can see them.
-*/
-let container, table, rows, svg;
+// Declare the variables here at the start so that any function can see them.
+let currNode, lastSize, nextNum, container, table, rows, radioButtons, svg;
+
+// Keep track of the current state and next number
+const EditMode = Object.freeze({
+  ADD: 'ADD',
+  REMOVE: 'REMOVE',
+  OFF: 'OFF'
+});
+
 document.addEventListener('DOMContentLoaded', () => {
+    currMode = EditMode.ADD;
+    lastSize = "0x0" // Track the previous size, at this stage unavailable
+    nextNum = 1;
+
     container = document.querySelector('.table-container');
     table = document.querySelector('table').tBodies[0];
-    rows = table.rows;    
+    rows = table.rows;
+    
+    radioButtons = document.querySelectorAll('input[type="radio"]');
     svg = document.getElementById('line-canvas');
   
     initialiseButton(); // Set up button behaviour
     initialiseCells(); // Remove all cells and set their behaviour
     setDimensions(6); // Default dimensions 6x6
 });
+
+
 
 function drawLine(prev, curr) {
   // Find where to draw the cells
@@ -107,18 +121,14 @@ function drawLine(prev, curr) {
   svg.appendChild(line);
 }
 
-let editMode = true;
-let nextNum = 1;
 function initialiseButton() {
   document.getElementById("start").addEventListener("click", async () => {
-    // Find the radio buttons so that they can all be disabled during solving
-    const radioButtons = document.querySelectorAll('input[type="radio"]');
+    // Disable solving and all other radio buttons
     radioButtons.forEach(radio => {
       radio.disabled = true;
     });
-
-    // Also prevent "duplcate solving"
     document.getElementById("start").disabled = true;
+    document.getElementById("start").textContent = "Solving";
     
     // Get the visible HTML rows
     const visibleRows = [...rows].filter(row => row.style.display === "");
@@ -141,12 +151,13 @@ function initialiseButton() {
     // Send the data (clear the lines first)
     await sendData(filledCells);
 
-    // Re-enable options and solving
+    // Re-enable solving and all other radio buttons
+    const div = document.querySelector('.cellEditMode');
     radioButtons.forEach(radio => {
-      radio.disabled = false;
+      radio.disabled = !div.contains(radio) ? currMode == EditMode.OFF : false;
     });
-
     document.getElementById("start").disabled = false;
+    document.getElementById("start").textContent = "Start solving";
   });
 }
 
@@ -156,7 +167,7 @@ function initialiseCells() {
     for (let j = 0; j < columns.length; j++) {
       const cell = columns[j];
 
-      // Remove the text then add click functionality
+      // Remove everything then add click functionality
       cell.innerHTML = "";
       cell.addEventListener('click', function() {
         /* Make sure editing the grid does nothing whilst attempting to solve, where
@@ -169,23 +180,30 @@ function initialiseCells() {
         }
 
         // Find a circle in this cell
-        let circle = this.querySelector('.circle');
+        let circle = cell.querySelector('.circle');
 
         // Show the circle (if not already there) and increment the next number
-        if (editMode && !circle) {
+        if (currMode == EditMode.ADD && !circle) {
           circle = document.createElement('div');
           circle.classList.add('circle');
           circle.textContent = String(nextNum);
           
-          this.appendChild(circle); // Show the circle in the table cell
+          // Show the circle in the table cell
+          cell.appendChild(circle);
+          
+          // Clear the previous lines and increment.
+          document.getElementById('line-canvas').innerHTML = '';
           nextNum++;
         }
 
         // Hide the circle and decrement the number
-        else if (!editMode && circle) {
+        else if (currMode == EditMode.REMOVE && circle) {
           let currNumber = parseInt(circle.textContent);
-          circle.remove(); // Safely wipes the inner circle element entirely from the DOM
+          cell.innerHTML = "";
           updateNumbers(currNumber); // All higher elements get reduced by one
+          
+          // Clear the previous lines
+          document.getElementById('line-canvas').innerHTML = '';
           nextNum--;
         }
 
@@ -196,12 +214,15 @@ function initialiseCells() {
   }
 }
 
-// Set cells to either add (true) or remove (false)
-function setEditMode(value){
-  editMode = value;
-}
-
 function setDimensions(size) {
+  /* Clear the previous lines if not already done so (requires updating the size).
+   * Use id as the default size of 6x6 is shown as such on the frontend.
+  */
+  if (document.getElementById(size + "x" + size).id !== lastSize) {
+    document.getElementById('line-canvas').innerHTML = '';
+    lastSize = document.getElementById(size + "x" + size).id
+  }
+  
   for (let i = 0; i < rows.length; i++) {
     // Check if the row should be hidden
     rows[i].style.display = i >= size ? "none" : "";
@@ -216,7 +237,7 @@ function setDimensions(size) {
         let circle = cells[j].querySelector('.circle');
         if (circle) {
           let currNumber = parseInt(circle.textContent, 10);
-          circle.remove();
+          cells[j].innerHTML = "";
           updateNumbers(currNumber);
           nextNum--;
         }
@@ -226,6 +247,17 @@ function setDimensions(size) {
 
   // If less than 2 circles are left, disable solving
   document.getElementById("start").disabled = nextNum <= 2;
+}
+
+// Change the edit mode
+function setEditMode(value){
+  currMode = Object.keys(EditMode).find(key => EditMode[key] === value);
+  
+  // Enable/disable all other radio buttons
+  const div = document.querySelector('.cellEditMode');
+  radioButtons.forEach(radio => {
+    radio.disabled = !div.contains(radio) ? currMode == EditMode.OFF : false;
+  });
 }
 
 function updateNumbers(currNum) {
@@ -238,7 +270,7 @@ function updateNumbers(currNum) {
     .map(cell => cell.querySelector('.circle'))
     .sort((a, b) => a.textContent.localeCompare(b.textContent, undefined, { numeric: true }));
 
-  // Downshift the numbers greater than currNumb
+  // Downshift the numbers greater than currNum
   filledCircles.forEach(circle => {
     const circleValue = parseInt(circle.textContent, 10);
     if (circleValue > currNum) {
@@ -247,6 +279,7 @@ function updateNumbers(currNum) {
   });
 }
 
+// Hotkeys
 window.addEventListener('keydown', (event) => {
     // Resizing (the comparison fails with letters)
     const number = parseInt(event.key, 10);
@@ -263,6 +296,9 @@ window.addEventListener('keydown', (event) => {
           break;
         case "b":
           document.getElementById("remove").click();
+          break;
+        case "c":
+          document.getElementById("off").click();
           break;
         default:
           break;

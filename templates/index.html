@@ -199,10 +199,13 @@
     <div class="cellEditMode">
         Cell edit mode:
         <label>
-            <input type="radio" name="mode" value="add" onclick="setEditMode(true)" id="add" checked> Add (a)
+            <input type="radio" name="mode" value="add" onclick="setEditMode('ADD')" id="add" checked> Add (a)
         </label>
         <label>
-            <input type="radio" name="mode" value="remove" onclick="setEditMode(false)" id="remove"> Remove (b)
+            <input type="radio" name="mode" value="remove" onclick="setEditMode('REMOVE')" id="remove"> Remove (b)
+        </label>
+        <label>
+            <input type="radio" name="mode" value="remove" onclick="setEditMode('OFF')" id="off"> Off (c)
         </label>
     </div>
 
