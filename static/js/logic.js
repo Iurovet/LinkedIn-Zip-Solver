@@ -28,7 +28,7 @@ async function sendData(payload) {
         // Skip unexpected trailing blank spaces then log
         if (!line.trim()) continue;
         const parsedNode = JSON.parse(line);
-        console.log('New message:', parsedNode);
+        console.log(parsedNode);
 
         // Guard against Python identifying structural graph compilation limits
         if (parsedNode.x === -1 || parsedNode.y === -1) {

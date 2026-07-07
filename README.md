@@ -4,7 +4,7 @@
 - Set edit mode to add, remove or off.
 - Set Forward or reverse direction (the latter is quirky and won't line up with logging, but ultimately leads to the right solution).
 - Hotkeys for the above.
-- Console-logging the decisions (perhaps the only thing left is saying when there truly is no solution).
+- Console-logging the decisions (mostly if not fully done).
 - Graphing the path with delay (the decisions are made first).
 
 # Future features:
