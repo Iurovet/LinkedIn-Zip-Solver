@@ -19,11 +19,11 @@
 - Hotkeys for the above
 - Console-logging the decisions
 - Graphing the path with delay (user-set: 0.1-5s), which comes from the backend to minimise access to the internal workings (and potentially a solution)
+- Change the colour/stroke width above in real-time
 
 # Future features:
-- Change the colour/stroke width of the graph line live
 - Duplicate the decisions onto the frontend (but more similar to lights on an arcade machine, if that's the right analogy). Won't quite work for the reverse direction, though
 - Manually drawing/earsing walls and having Python use neural networks to detect where they were drawn (then shown on the screen)
 
 # No longer in scope
-- Changing the delay live: Even if the minimum delay isn't "fast" per-se (or there's a lot of backtracking), changing the delay live somewhat goes against the purpose of not being able to cheat. Plus, I wasn't even able to implement it in the current stack (HTML/CSS/JS frontend, Python-Flask backend)
+- Changing the delay live in real-time: Even if the minimum delay isn't "fast" per-se (or there's a lot of backtracking), changing the delay live somewhat goes against the purpose of not being able to cheat. Plus, I wasn't even able to implement it in the current stack (HTML/CSS/JS frontend, Python-Flask backend)

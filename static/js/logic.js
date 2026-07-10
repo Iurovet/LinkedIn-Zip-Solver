@@ -64,9 +64,9 @@ async function sendData(payload) {
 }
 
 // Declare the variables here at the start so that any function can see them.
-let currNode, delay, lastSize, nextNum, pathType, parameters, container, table, rows, svg;
-
-// Keep track of the current state and next number
+let controls, currNode, lastSize, nextNum, pathType;
+let colour, delay, width;
+let container, table, rows, svg;
 const EditMode = Object.freeze({
   ADD: 'ADD',
   REMOVE: 'REMOVE',
@@ -74,12 +74,16 @@ const EditMode = Object.freeze({
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    controls = document.querySelectorAll('input:not(.cellEditMode input, .graphSettings input)'); // Except edit mode
     currMode = EditMode.ADD;
-    delay = 2 // Default delay
     lastSize = "0x0" // Track the previous size, at this stage unavailable
     nextNum = 1;
-    parameters = document.querySelectorAll('input:not(.cellEditMode input)'); // Except edit mode
     pathType = true // Forward direction
+
+    // Graph config
+    colour = "#FF0000" // Red (in EX)
+    delay = 2 // Default delay (in seconds)
+    width = 2 // Stroke width (in px)
 
     // Locations on the page
     container = document.querySelector('.table-container');
@@ -90,13 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initialiseButton(); // Set up button behaviour
     initialiseCells(); // Clean up the cells and set their behaviour
     setDimensions(6); // Default dimensions 6x6 (removes the excess)
-    
-    // Change the delay, independent of browser behaviour
-    document.getElementById('delay').addEventListener('input', (event) => {
-      delay = event.target.value;
-      document.getElementById('delay-display').textContent = delay + "s";
-      event.preventDefault();
-    });
+    setGraphSettings() // Graph settings
 });
 
 function drawLine(prev, curr) {
@@ -122,8 +120,8 @@ function drawLine(prev, curr) {
   line.setAttribute("y1", y1);
   line.setAttribute("x2", x2);
   line.setAttribute("y2", y2);
-  line.setAttribute("stroke", "red");
-  line.setAttribute("stroke-width", "2");
+  line.setAttribute("stroke", colour);
+  line.setAttribute("stroke-width", width);
   line.setAttribute("data-key", `${prev.x},${prev.y}-${curr.x},${curr.y}`);
   svg.appendChild(line);
 }
@@ -131,7 +129,7 @@ function drawLine(prev, curr) {
 function initialiseButton() {
   document.getElementById("start").addEventListener("click", async () => {
     // Disable solving and all other controls
-    parameters.forEach(control => {
+    controls.forEach(control => {
       control.disabled = true;
     });
     document.getElementById("start").disabled = true;
@@ -163,7 +161,7 @@ function initialiseButton() {
 
     // Re-enable solving and all other controls
     const div = document.querySelector('.cellEditMode');
-    parameters.forEach(control => {
+    controls.forEach(control => {
       control.disabled = false;
     });
     document.getElementById("start").disabled = false;
@@ -259,12 +257,49 @@ function setDimensions(size) {
   document.getElementById("start").disabled = nextNum <= 2;
 }
 
+// Change graph settings (browser behaviour-independent)
+function setGraphSettings() {
+  // Colour
+  document.getElementById('colour').addEventListener('input', (event) => {
+    colour = event.target.value;
+    
+    // Work on all lines
+    const children = document.getElementById('line-canvas').children;
+    for (let i = 0; i < children.length; i++) {
+      children[i].setAttribute("stroke", colour);
+    }
+
+    event.preventDefault();
+  });
+
+  // Delay
+  document.getElementById('delay').addEventListener('input', (event) => {
+    delay = event.target.value;
+    document.getElementById('delay-display').textContent = delay + "s";
+    event.preventDefault();
+  });
+
+  // Stroke width
+  document.getElementById('width').addEventListener('input', (event) => {
+    width = event.target.value;
+    
+    // Work on all lines
+    const children = document.getElementById('line-canvas').children;
+    for (let i = 0; i < children.length; i++) {
+      children[i].setAttribute("stroke-width", width);
+    }
+    
+    document.getElementById('width-display').textContent = width + "px";
+    event.preventDefault();
+  });
+}
+
 // Change the edit mode
 function setEditMode(value){
   currMode = Object.keys(EditMode).find(key => EditMode[key] === value);
   
   // Enable/disable all other controls
-  parameters.forEach(control => {
+  controls.forEach(control => {
     control.disabled = currMode == EditMode.OFF
   });
 }
