@@ -1,7 +1,4 @@
 async function sendData(payload) {
-  // Clear the previous lines
-  document.getElementById('line-canvas').innerHTML = '';
-
   try {
     const response = await fetch('/api/generate-path', {
       method: 'POST',
@@ -67,6 +64,7 @@ async function sendData(payload) {
 let controls, currNode, lastSize, nextNum, pathType;
 let colour, delay, width;
 let container, table, rows, svg;
+let startTime, elapsedTime, timerInterval;
 const EditMode = Object.freeze({
   ADD: 'ADD',
   REMOVE: 'REMOVE',
@@ -90,6 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
     table = document.querySelector('table').tBodies[0];
     rows = table.rows;
     svg = document.getElementById('line-canvas');
+
+    // Stopwatch (in case the puzzle is intractable)
+    startTime = 0; // In seconds
+    elapsedTime = 0; // In seconds
+    timerInterval = null;
   
     initialiseButton(); // Set up button behaviour
     initialiseCells(); // Clean up the cells and set their behaviour
@@ -133,7 +136,6 @@ function initialiseButton() {
       control.disabled = true;
     });
     document.getElementById("start").disabled = true;
-    document.getElementById("start").textContent = "Solving";
     
     // Get the visible HTML rows
     const visibleRows = [...rows].filter(row => row.style.display === "");
@@ -153,11 +155,16 @@ function initialiseButton() {
       filledCells.push(rowData);
     }
 
-    // Send the data (clear the lines first)
+    // Clear the lines first
+    document.getElementById('line-canvas').innerHTML = '';
+
+    // Track time spent in case of intractable puzzle
+    startTimer();
     await sendData({
       "filledCells": filledCells,
       "pathType": pathType,
       "delay": parseFloat(delay, 10)});
+    stopTimer();
 
     // Re-enable solving and all other controls
     const div = document.querySelector('.cellEditMode');
@@ -308,6 +315,35 @@ function setEditMode(value){
  * The latter produces quirky, but ultimately correct results.
 */
 function setPathType(isNormal) { pathType = isNormal; }
+
+function startTimer() {
+  // Anchor the start time back dynamically to account for previous pauses
+  startTime = Date.now() - elapsedTime;
+
+  /* Run the update cycle every 10ms for a smooth sub-second resolution.
+   * Warning: In certain cases this might cause the path to freeze momentarily
+  */
+  timerInterval = setInterval(() => {
+    elapsedTime = Date.now() - startTime;
+    
+    /* Convert milliseconds to total seconds. Note that oversampling is
+     * used here to allow smooth transitions
+    */
+    const totalSeconds = Math.floor(elapsedTime / 1000);
+    
+    // Format to 2 decimal places to resemble a standard stopwatch
+    document.getElementById("start").textContent = "Solving (" + totalSeconds + "s)";
+  }, 10);
+}
+function stopTimer() {
+  // Stop any active iterations and clear the states completely
+  clearInterval(timerInterval);
+  timerInterval = null;
+  elapsedTime = 0;
+  
+  // Remove time elapsed
+  document.getElementById("start").textContent = "Start solving";
+}
 
 function updateNumbers(currNum) {
   /* Get the visible cells. Note that {numeric: true} favours outcomes
