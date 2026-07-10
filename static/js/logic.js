@@ -64,7 +64,7 @@ async function sendData(payload) {
 }
 
 // Declare the variables here at the start so that any function can see them.
-let currNode, lastSize, nextNum, pathType, container, table, rows, radioButtons, svg;
+let currNode, delay, lastSize, nextNum, pathType, parameters, container, table, rows, svg;
 
 // Keep track of the current state and next number
 const EditMode = Object.freeze({
@@ -75,23 +75,29 @@ const EditMode = Object.freeze({
 
 document.addEventListener('DOMContentLoaded', () => {
     currMode = EditMode.ADD;
+    delay = 2 // Default delay
     lastSize = "0x0" // Track the previous size, at this stage unavailable
     nextNum = 1;
+    parameters = document.querySelectorAll('input:not(.cellEditMode input)'); // Except edit mode
     pathType = true // Forward direction
 
+    // Locations on the page
     container = document.querySelector('.table-container');
     table = document.querySelector('table').tBodies[0];
     rows = table.rows;
-    
-    radioButtons = document.querySelectorAll('input[type="radio"]');
     svg = document.getElementById('line-canvas');
   
     initialiseButton(); // Set up button behaviour
     initialiseCells(); // Clean up the cells and set their behaviour
     setDimensions(6); // Default dimensions 6x6 (removes the excess)
+    
+    // Change the delay, independent of browser behaviour
+    document.getElementById('delay').addEventListener('input', (event) => {
+      delay = event.target.value;
+      document.getElementById('delay-display').textContent = delay + "s";
+      event.preventDefault();
+    });
 });
-
-
 
 function drawLine(prev, curr) {
   // Find where to draw the cells
@@ -124,9 +130,9 @@ function drawLine(prev, curr) {
 
 function initialiseButton() {
   document.getElementById("start").addEventListener("click", async () => {
-    // Disable solving and all other radio buttons
-    radioButtons.forEach(radio => {
-      radio.disabled = true;
+    // Disable solving and all other controls
+    parameters.forEach(control => {
+      control.disabled = true;
     });
     document.getElementById("start").disabled = true;
     document.getElementById("start").textContent = "Solving";
@@ -142,7 +148,7 @@ function initialiseButton() {
       for (let j = 0; j < visibleCells.length; ++j) {
         let element = visibleCells[j];
         rowData.push({
-          checkpoint: element.textContent.trim() !== "" ? parseInt(element.textContent) : null
+          checkpoint: element.textContent.trim() !== "" ? parseInt(element.textContent, 10) : null
         });
       }
       
@@ -150,12 +156,15 @@ function initialiseButton() {
     }
 
     // Send the data (clear the lines first)
-    await sendData({"filledCells": filledCells, "pathType": pathType});
+    await sendData({
+      "filledCells": filledCells,
+      "pathType": pathType,
+      "delay": parseFloat(delay, 10)});
 
-    // Re-enable solving and all other radio buttons
+    // Re-enable solving and all other controls
     const div = document.querySelector('.cellEditMode');
-    radioButtons.forEach(radio => {
-      radio.disabled = !div.contains(radio) ? currMode == EditMode.OFF : false;
+    parameters.forEach(control => {
+      control.disabled = false;
     });
     document.getElementById("start").disabled = false;
     document.getElementById("start").textContent = "Start solving";
@@ -172,7 +181,7 @@ function initialiseCells() {
       cell.innerHTML = "";
       cell.addEventListener('click', function() {
         /* Make sure editing the grid does nothing whilst attempting to solve, where
-         * the main sign of such is the disabled radio buttons (and only then is the
+         * the main sign of such is the disabled controls (and only then is the
          * solve button rendered inoperative, so as not to permanently lock someone
          * out of pressing it).
         */
@@ -199,7 +208,7 @@ function initialiseCells() {
 
         // Hide the circle and decrement the number
         else if (currMode == EditMode.REMOVE && circle) {
-          let currNumber = parseInt(circle.textContent);
+          let currNumber = parseInt(circle.textContent, 10);
           cell.innerHTML = "";
           updateNumbers(currNumber); // All higher elements get reduced by one
           
@@ -254,10 +263,9 @@ function setDimensions(size) {
 function setEditMode(value){
   currMode = Object.keys(EditMode).find(key => EditMode[key] === value);
   
-  // Enable/disable all other radio buttons
-  const div = document.querySelector('.cellEditMode');
-  radioButtons.forEach(radio => {
-    radio.disabled = !div.contains(radio) ? currMode == EditMode.OFF : false;
+  // Enable/disable all other controls
+  parameters.forEach(control => {
+    control.disabled = currMode == EditMode.OFF
   });
 }
 

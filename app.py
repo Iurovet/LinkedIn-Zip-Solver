@@ -14,7 +14,7 @@ def hello_world():
 def solvePuzzle():
     # Get the data
     data = request.json
-    filledCells, direction = data['filledCells'], data['pathType']
+    filledCells, direction, delay = data['filledCells'], data['pathType'], data["delay"]
 
     # Set all visited statuses to false
     for i in range(0, len(filledCells)):
@@ -37,9 +37,9 @@ def solvePuzzle():
     else:
         path = findPath(filledCells, *findCheckpoint(filledCells, 1), [], [])[1]
     
-    # Get the path (allow both directions, one of which
-    # produces quirky but ultimately correct results).
-    def returnPath(path, direction):
+    # Get the path (allow both directions, one of which produces quirky
+    # but ultimately correct results).
+    def returnPath(path, direction, delay):
         for index, p1 in enumerate(path if direction else reversed(path)):
             # Mention nonsensicality then output to frontend
             if not direction:
@@ -49,10 +49,11 @@ def solvePuzzle():
             # Ensures no delay when clicking the start button (unless the
             # particular path is intractable) nor after the last cell is placed
             if index < len(path)-1:
-                time.sleep(2)
-    
+                # User-set parameter, but not editable "live"
+                time.sleep(delay)
+
     return Response(
-        stream_with_context(returnPath(path, direction)),
+        stream_with_context(returnPath(path, direction, delay)),
         mimetype='application/json'
     )
 

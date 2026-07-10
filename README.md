@@ -18,11 +18,10 @@
 - Set Forward or reverse direction (the latter is quirky and won't line up with any logging, but ultimately leads to the right solution)
 - Hotkeys for the above
 - Console-logging the decisions
-- Graphing the path with delay (currently harcoded at 2 seconds), which comes from the backend to minimise access to the internal workings (and potentially a solution)
+- Graphing the path with delay (user-set: 0.1-5s), which comes from the backend to minimise access to the internal workings (and potentially a solution)
 
 # Future features:
 - Change the colour/stroke width of the graph line live
-- Change the graphing delay (not live)
 - Duplicate the decisions onto the frontend (but more similar to lights on an arcade machine, if that's the right analogy). Won't quite work for the reverse direction, though
 - Manually drawing/earsing walls and having Python use neural networks to detect where they were drawn (then shown on the screen)
 
