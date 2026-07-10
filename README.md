@@ -1,4 +1,5 @@
-# Please note: This is for skill development only, not for cheating and getting a really low time on the actual puzzle (which should be impossible, anyway, due to brute-force and delays).
+# Please note: This is for skill development only, not for cheating and/or getting a really low time on the actual puzzle (which should be impossible, anyway, due to brute-force and delays)
+- You could instead create hypothetical puzzles, or take one you've solved and see the process/verify the solution
 
 # Setup:
 - Clone this repo (git clone https://github.com/Iurovet/LinkedIn-Zip-Solver)
@@ -7,18 +8,23 @@
 ## Running the project:
 - cd into mnt then into whatever path you've cloned the repo into
 - python3 -m venv .venv (only required the 1st time after (re-)cloning)
+- pip install Flask
 - source .venv/bin/activate
 - python3 app.py
 
 # Features include:
 - Set size between 5 and 8 (assume square matrices, as in the real thing)
 - Set edit mode to add, remove or off
-- Set Forward or reverse direction (the latter is quirky and won't line up with logging, but ultimately leads to the right solution)
+- Set Forward or reverse direction (the latter is quirky and won't line up with any logging, but ultimately leads to the right solution)
 - Hotkeys for the above
 - Console-logging the decisions
-- Graphing the path with delay
+- Graphing the path with delay (currently harcoded at 2 seconds), which comes from the backend to minimise access to the internal workings (and potentially a solution)
 
 # Future features:
-- Change the delay time, as well as the colour/stroke width of the graph line (all live)
-- Duplicate the decisions onto the frontend (but more similar to lights on an arcade machine, if that's the right analogy)
-- Manually drawing walls and having Python use neural networks to detect where they were drawn
+- Change the colour/stroke width of the graph line live
+- Change the graphing delay (not live)
+- Duplicate the decisions onto the frontend (but more similar to lights on an arcade machine, if that's the right analogy). Won't quite work for the reverse direction, though
+- Manually drawing/earsing walls and having Python use neural networks to detect where they were drawn (then shown on the screen)
+
+# No longer in scope
+- Changing the delay live: Even if the minimum delay isn't "fast" per-se (or there's a lot of backtracking), changing the delay live somewhat goes against the purpose of not being able to cheat. Plus, I wasn't even able to implement it in the current stack (HTML/CSS/JS frontend, Python-Flask backend)
