@@ -10,9 +10,6 @@ async function sendData(payload) {
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
     
-    // Make sure multiple packets don't break the buffer
-    let pathHistory = [];
-
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -32,11 +29,12 @@ async function sendData(payload) {
           break;
         }
 
-        // Push new node to the master path history
+        // Set up lights then add new node
+        if (pathHistory.length == 0) { updateLightsSetup(); }
         pathHistory.push(parsedNode);
 
         // Draw line if we have at least two historic entries to bridge
-        if (pathHistory.length > 1) {
+        if (pathHistory.length >= 2) {
           const prev = pathHistory[pathHistory.length - 2];
           const curr = pathHistory[pathHistory.length - 1];
           
@@ -47,21 +45,24 @@ async function sendData(payload) {
             `line[data-key="${key}"], line[data-key="${keyReverse}"]`
           );
           
-          if (lineSearch) {
-            lineSearch.remove();
-          } else {
-            drawLine(prev, curr);
-          }
+          // Either draw or erase the line
+          lineSearch ? (lineSearch.remove(), null) : drawLine(prev, curr);
         }
+
+        // Show the puzzle status on the frontend
+        updateLights();
       }
     }
+    
+    // Clear path history as it's not needed
+    pathHistory = [];
   } catch (error) {
     console.error('Error:', error);
   }
 }
 
 // Declare the variables here at the start so that any function can see them.
-let controls, currNode, lastSize, nextNum, pathType;
+let controls, currNode, lastSize, nextNum, pathType, pathHistory;
 let colour, delay, width;
 let container, table, rows, svg;
 let startTime, elapsedTime, timerInterval;
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lastSize = "0x0" // Track the previous size, at this stage unavailable
     nextNum = 1;
     pathType = true // Forward direction
+    pathHistory = []; // Packet tracking
 
     // Graph config
     colour = "#FF0000" // Red (in EX)
@@ -363,6 +365,78 @@ function updateNumbers(currNum) {
     if (circleValue > currNum) {
       circle.textContent = (circleValue - 1).toString();
     }
+  });
+}
+
+// Update the status/checkpoint lights
+function updateLights() {
+  const containerStatus = document.querySelector(".statusLights").children;
+  const containerCheckpoint = document.querySelector(".checkpointLights").children;
+
+  // Text from log message in order for the light to show
+  const statuses = [
+    "Visiting", "Backtracking", "neighbours", "wrong order",
+    "no solutions", "complete path", "not all cells"
+  ];
+  const lastLog = pathHistory[pathHistory.length-1];
+  for (let i = 0; i < statuses.length; ++i) { // 1st light always shows
+    // Show the coordinates else check if the other lights need to show
+    if (i == 0) {
+      containerStatus[i].textContent = "Visiting (" + lastLog.x + ", " + lastLog.y + ") ";
+    }
+    else {
+      containerStatus[i].style.display = lastLog.message.includes(statuses[i]) 
+                                                              ? '' : 'none';
+    }
+  }
+
+  /* Check if at least one line goes through a checkpoint.
+   * Always show checkpoint 1, though, as the starting point.
+  */
+  for (let i = 2; i < containerCheckpoint.length; ++i) {
+    for (let j = 0; j < rows.length; ++j) {
+      const cells = rows[j].cells;
+      for (let k = 0; k < cells.length; ++k) {
+        if (rows[j].cells[k].textContent == i) {
+          // Found the matching checkpoint 
+          containerCheckpoint[i].style.visibility = document.querySelector(
+            "[data-key*='" + j + "," + k + "']"
+          ) == null ? 'hidden' : '';
+          break;
+        }
+      }
+    }
+  }
+}
+
+// Set up for the above function
+function updateLightsSetup() {
+  // Containers
+  const containerStatus = document.querySelector(".statusLights");
+  const containerCheckpoint = document.querySelector(".checkpointLights");
+
+  // Text contents
+  const statuses = [
+    "Visiting ", "Backtracking ", "Last neighbour ", "Wrong order ",
+    "No solutions ", "Complete path ", "Not all cells used "
+  ];
+  const checkpoints = ["Checkpoints: "];
+  for (let i = 1; i <= document.querySelectorAll('div.circle').length; ++i) {
+    checkpoints.push(i + " ");
+  }
+
+  // Make the elements (hidden for now)
+  statuses.forEach((status, index) => {
+    const element = document.createElement('span');
+    element.textContent = status;
+    element.style.display = (index > 0) ? 'none' : ''; // Visiting to always show
+    containerStatus.append(element);
+  });
+  checkpoints.forEach((check, index) => {
+    const element = document.createElement('span');
+    element.textContent = check;
+    element.style.visibility = (index >= 2) ? 'hidden' : ''; // Checkpoints: 1 to always show
+    containerCheckpoint.append(element);
   });
 }
 
