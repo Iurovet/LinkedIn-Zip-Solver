@@ -72,7 +72,7 @@ const EditMode = Object.freeze({
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    controls = document.querySelectorAll('input:not(.cellEditMode input, .graphSettings input)'); // Except edit mode
+    controls = document.querySelectorAll('input:not(.graphSettings input)');
     currMode = EditMode.ADD;
     lastSize = "0x0" // Track the previous size, at this stage unavailable
     nextNum = 1;
@@ -131,7 +131,7 @@ function drawLine(prev, curr) {
 
 function initialiseButton() {
   document.getElementById("start").addEventListener("click", async () => {
-    // Disable solving and all other controls
+    // Disable all controls except edit mode/graph
     controls.forEach(control => {
       control.disabled = true;
     });
@@ -166,11 +166,11 @@ function initialiseButton() {
       "delay": parseFloat(delay, 10)});
     stopTimer();
 
-    // Re-enable solving and all other controls
-    const div = document.querySelector('.cellEditMode');
+    // Re-enable all controls
     controls.forEach(control => {
       control.disabled = false;
     });
+
     document.getElementById("start").disabled = false;
     document.getElementById("start").textContent = "Start solving";
   });
@@ -305,9 +305,11 @@ function setGraphSettings() {
 function setEditMode(value){
   currMode = Object.keys(EditMode).find(key => EditMode[key] === value);
   
-  // Enable/disable all other controls
+  // Enable/disable graph controls (leave edit mode untouched)
   controls.forEach(control => {
-    control.disabled = currMode == EditMode.OFF
+    if (control.matches('input:not(.cellEditMode input)')) {
+      control.disabled = (currMode == EditMode.OFF);
+    }
   });
 }
 
