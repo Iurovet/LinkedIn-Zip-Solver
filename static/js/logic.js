@@ -66,6 +66,7 @@ let controls, currNode, lastSize, nextNum, pathType, pathHistory;
 let colour, delay, width;
 let container, table, rows, svg;
 let startTime, elapsedTime, timerInterval;
+let warnsdorff
 const EditMode = Object.freeze({
   ADD: 'ADD',
   REMOVE: 'REMOVE',
@@ -73,33 +74,41 @@ const EditMode = Object.freeze({
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    controls = document.querySelectorAll('input:not(.graphSettings input)');
-    currMode = EditMode.ADD;
-    lastSize = "0x0" // Track the previous size, at this stage unavailable
-    nextNum = 1;
-    pathType = true // Forward direction
-    pathHistory = []; // Packet tracking
+  // GLOBAL VARIABLE SETTING
+  controls = document.querySelectorAll('input:not(.graphSettings input)');
+  currMode = EditMode.ADD;
+  lastSize = "0x0" // Track the previous size, at this stage unavailable
+  nextNum = 1;
+  pathType = true // Forward direction
+  pathHistory = []; // Packet tracking
 
-    // Graph config
-    colour = "#FF0000" // Red (in EX)
-    delay = 2 // Default delay (in seconds)
-    width = 2 // Stroke width (in px)
+  // Graph config
+  colour = "#FF0000" // Red (in EX)
+  delay = 2 // Default delay (in seconds)
+  width = 2 // Stroke width (in px)
 
-    // Locations on the page
-    container = document.querySelector('.table-container');
-    table = document.querySelector('table').tBodies[0];
-    rows = table.rows;
-    svg = document.getElementById('line-canvas');
+  // Locations on the page
+  container = document.querySelector('.table-container');
+  table = document.querySelector('table').tBodies[0];
+  rows = table.rows;
+  svg = document.getElementById('line-canvas');
 
-    // Stopwatch (in case the puzzle is intractable)
-    startTime = 0; // In seconds
-    elapsedTime = 0; // In seconds
-    timerInterval = null;
-  
-    initialiseButton(); // Set up button behaviour
-    initialiseCells(); // Clean up the cells and set their behaviour
-    setDimensions(6); // Default dimensions 6x6 (removes the excess)
-    setGraphSettings() // Graph settings
+  // Stopwatch (in case the puzzle is intractable)
+  startTime = 0; // In seconds
+  elapsedTime = 0; // In seconds
+  timerInterval = null;
+
+  // Heuristics
+  warnsdorff = false;
+
+  initialiseButton(); // Set up button behaviour
+  initialiseCells(); // Clean up the cells and set their behaviour
+  setDimensions(6); // Default dimensions 6x6 (removes the excess)
+  setGraphSettings() // Graph settings
+
+  document.getElementById("warnsdorff").addEventListener('change', (event) => {
+    warnsdorff = !warnsdorff;
+  });
 });
 
 function drawLine(prev, curr) {
@@ -141,7 +150,7 @@ function initialiseButton() {
     
     // Get the visible HTML rows
     const visibleRows = [...rows].filter(row => row.style.display === "");
-    let filledCells = [];
+    let graph = [];
     for (let i = 0; i < visibleRows.length; ++i) {
       let rowData = [];
       
@@ -154,18 +163,22 @@ function initialiseButton() {
         });
       }
       
-      filledCells.push(rowData);
+      graph.push(rowData);
     }
 
-    // Clear the lines first
+    // Clear the lines and lights first
     document.getElementById('line-canvas').innerHTML = '';
+    document.querySelector(".statusLights").innerHTML = '';
+    document.querySelector(".checkpointLights").innerHTML = '';
 
     // Track time spent in case of intractable puzzle
     startTimer();
     await sendData({
-      "filledCells": filledCells,
+      "graph": graph,
       "pathType": pathType,
-      "delay": parseFloat(delay, 10)});
+      "delay": parseFloat(delay, 10),
+      "warnsdorff": warnsdorff
+    });
     stopTimer();
 
     // Re-enable all controls

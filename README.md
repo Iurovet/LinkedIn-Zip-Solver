@@ -24,8 +24,9 @@
 - Duplicate the decisions onto the frontend (but more similar to lights on an arcade machine, if that's the right analogy). Won't quite work for the reverse direction, though (and may need updating)
 
 # Future features:
-- Manually drawing/erasing walls and having Python use neural networks to detect where they were drawn (then shown on the screen)
+- Manually drawing/erasing walls (just along the borders)
 - Investigating/implementing heuristics to allow the path to be solved more quickly
 
 # No longer in scope
 - Changing the delay live in real-time: Even if the minimum delay isn't "fast" per-se (or there's a lot of backtracking), changing the delay live somewhat goes against the purpose of not being able to cheat. Plus, I wasn't even able to implement it in the current stack (HTML/CSS/JS frontend, Python-Flask backend)
+- Neural networks for walls: Given that it's too hard to come up with an appropriate dataset (which does not otherwise exist, to my knowledge), the walls will be drawn/erased only along the perimeters themselves

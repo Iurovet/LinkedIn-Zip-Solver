@@ -5,6 +5,9 @@ from flask import Flask, render_template, Response, request, stream_with_context
 # Initialize the Flask application
 app = Flask(__name__)
 
+# Global variables to simplify variable passing
+graph, path, path_good = [], [], []
+
 # Define a route for the root URL
 @app.route('/')
 def hello_world():
@@ -14,18 +17,19 @@ def hello_world():
 def solvePuzzle():
     # Get the data
     data = request.json
-    filledCells, direction, delay = data['filledCells'], data['pathType'], data["delay"]
+    global graph, path
+    graph, direction, delay, warnsdorff = data['graph'], data['pathType'], data["delay"], data['warnsdorff']
 
     # Set all visited statuses to false
-    for i in range(0, len(filledCells)):
-        for j in range(0, len(filledCells[i])):
-            filledCells[i][j]['visited'] = False
+    for i in range(0, len(graph)):
+        for j in range(0, len(graph[i])):
+            graph[i][j]['visited'] = False
 
     # Whilst JS already handles this, make sure the checkpoint numbers go
     # from 1 to n without any gaps (n is how many cells the user added).
     checkpoints = sorted([
         item["checkpoint"]
-        for row in filledCells
+        for row in graph
         for item in row
         if item["checkpoint"] is not None
     ])
@@ -35,7 +39,9 @@ def solvePuzzle():
         message = "Error: Need at least 2 cells with continuous numbering"
         path = [{'x': -1, 'y': -1, 'message': message}]
     else:
-        path = findPath(filledCells, *findCheckpoint(filledCells, 1), [], [])[1]
+        # Clear both paths first
+        path, path_good = [], []
+        findPath(*findCheckpoint(graph, 1), warnsdorff)
     
     # Get the path (allow both directions, one of which produces quirky
     # but ultimately correct results).
@@ -57,7 +63,7 @@ def solvePuzzle():
         mimetype='application/json'
     )
 
-def backtrack(path, path_good):
+def backtrack():
     # If there is already a known good cell (at time of decision), go to that one.
     # Otherwise no need to waste another line saying "backtrack".
     if len(path_good) >= 2:
@@ -75,36 +81,34 @@ def backtrack(path, path_good):
 
         path.append({**oldCell, "message": message})
 
-    return path, path_good
-
-def findCheckpoint(filledCells, num):
+def findCheckpoint(graph, num):
     return next(
         (r, c)
-        for r, row in enumerate(filledCells)
+        for r, row in enumerate(graph)
         for c, item in enumerate(row)
         if item.get("checkpoint") == num
     )
 
-def findPath(filledCells, r, c, path, path_good):
+def findPath(r, c, warnsdorff):
     # Initialize constants
-    size = len(filledCells)
+    size = len(graph)
     total = size ** 2
     
     # Mark current cell as visited
-    filledCells[r][c]['visited'] = True
-    visitedNo = sum(cell['visited'] is True for row in filledCells for cell in row)
+    graph[r][c]['visited'] = True
+    visitedNo = sum(cell['visited'] is True for row in graph for cell in row)
 
     # Log the move
     message = "Visiting (" + str(r) + ", " + str(c) + ")"
-    if filledCells[r][c]['checkpoint'] is not None:
-        message += " - checkpoint " + str(filledCells[r][c]['checkpoint'])
+    if graph[r][c]['checkpoint'] is not None:
+        message += " - checkpoint " + str(graph[r][c]['checkpoint'])
     
     path.append({'x': r, 'y': c, 'message': message})
     path_good.append({'x': r, 'y': c, 'message': message})
 
     # Reached the final checkpoint
-    if filledCells[r][c] == max(
-        (item for row in filledCells for item in row if item['checkpoint'] is not None),
+    if graph[r][c] == max(
+        (item for row in graph for item in row if item['checkpoint'] is not None),
         key=lambda x: x.get('checkpoint', 0)
     ):
         # Check whether all cells have been visited
@@ -112,40 +116,55 @@ def findPath(filledCells, r, c, path, path_good):
         
         if visitedNo != total:
             # Backtrack and record as such
-            filledCells[r][c]['visited'] = False
-            path, path_good = backtrack(path, path_good)
-            
-        return visitedNo == total, path, path_good
+            graph[r][c]['visited'] = False
+            backtrack()
+
+        return visitedNo == total
 
     # Check if a checkpoing was reached in the checkpoint
-    if filledCells[r][c]['checkpoint'] is not None:
-        checkpoints = [d for row in filledCells for d in row if d.get("checkpoint") is not None]
-        if any(d["checkpoint"] < filledCells[r][c]['checkpoint'] and not d["visited"] for d in checkpoints):
+    if graph[r][c]['checkpoint'] is not None:
+        checkpoints = [d for row in graph for d in row if d.get("checkpoint") is not None]
+        if any(d["checkpoint"] < graph[r][c]['checkpoint'] and not d["visited"] for d in checkpoints):
             # Backtrack and record as such
-            filledCells[r][c]['visited'] = False
+            graph[r][c]['visited'] = False
             path[-1]['message'] += " (wrong order)"
-            path, path_good = backtrack(path, path_good)
+            backtrack()
             
-            return False, path, path_good
+            return False
     
     # DFS Exploration
     neighbours = [(r + dr, c + dc) for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)] if 0 <= r + dr < size and 0 <= c + dc < size]
+    
+    # Visit unvisited neighbours in ascending order of their neighbour count
+    degrees = [0] * len(neighbours)
+    if warnsdorff:
+        for index, n1 in enumerate(neighbours):
+            if not graph[n1[0]][n1[1]]['visited']:
+                # Add one to each unvisited orthogonal neighbour in-bounds
+                degrees[index] = sum(
+                    1 for ddr, ddc in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                    if 0 <= n1[0] + ddr < size and 0 <= n1[1] + ddc < size 
+                    and not graph[n1[0] + ddr][n1[1] + ddc]['visited']
+                )
+        # Sort degrees in ascending order then sort neighbours by these indices
+        degrees = sorted(range(len(degrees)), key=lambda i: neighbours[i])
+        neighbours = [neighbours[i] for i in degrees]
+
     for n1 in neighbours:
-        if not filledCells[n1[0]][n1[1]]['visited']:
-            if findPath(filledCells, *n1, path, path_good)[0]:
-                return True, path, path_good
+        if not graph[n1[0]][n1[1]]['visited']:
+            if findPath(*n1, warnsdorff):
+                return True
 
     # Backtrack and record dead ends as such
-    filledCells[r][c]['visited'] = False
+    graph[r][c]['visited'] = False
     path[-1]['message'] += " (no more unvisited neighbours)"
 
     # No solution if back to the start
     if len(path_good) == 1:
         path[-1]['message'] = path[-1]['message'].replace("neighbours)", "neighbours - no solutions)")
+    backtrack()
 
-    path, path_good = backtrack(path, path_good)
-
-    return False, path, path_good
+    return False
 
 if __name__ == '__main__':
     # Run the application in debug mode for development
